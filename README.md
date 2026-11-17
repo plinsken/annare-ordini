@@ -37,3 +37,12 @@ npm test
 ```bash
 vercel deploy --prod
 ```
+
+## Per Gabriele
+
+- L'app è tutta in `public/index.html`. Modifica lì prodotti, testi e grafica.
+- Ogni modifica su `main` va online da sola su ordini.annarepizzeria.com in circa un minuto. Se vuoi provare prima, lavora su un altro branch: Vercel ti dà un link di prova.
+- Se cambi `public/index.html` o altri file in `public/`, alza il numero in `CACHE` dentro `public/sw.js` (es. `v2` → `v3`), altrimenti i telefoni continuano a vedere la versione vecchia.
+- Non toccare `api/` senza parlarne con Tom: è la parte che controlla i codici e manda le email.
+- I codici dello staff e la chiave Resend non sono qui ma su Vercel. Per aggiungere o togliere persone scrivi a Tom.
+- Se qualcosa si rompe, Tom può tornare alla versione precedente con un clic.
