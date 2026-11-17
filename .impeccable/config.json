@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "guida/guida-email.html"
+        ],
+        "createdAt": "2026-11-14T12:59:46.878Z",
+        "reason": "Claude, verified by rendering: static scan pairs dark-theme tokens with default black/white because the artifact skeleton sets body colour at publish; light and dark renders at 390px are legible"
+      }
+    ]
+  }
+}
