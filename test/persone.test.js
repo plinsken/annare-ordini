@@ -54,3 +54,11 @@ test('remove a person: out everywhere, off the list, old code dead; not yourself
   const [{ n }] = await q(`SELECT count(*)::int n FROM registro WHERE azione IN ('persona-aggiunta','persona-rimossa','telefono-perso','codice-creato')`);
   assert.ok(n >= 5);
 });
+
+test('an admin session cannot mint an admin setup code (only Tom\'s script can)', async () => {
+  const r = await chiama(persone, 'POST', { persona: g.id, azione: 'codice' }, {}, g.jar);
+  assert.equal(r.code, 403);
+  assert.equal(r.body.errore, 'Il codice per Gabriele lo crea Tom.');
+  const [{ n }] = await q(`SELECT count(*)::int n FROM codici WHERE persona_id = $1 AND usato IS NULL`, [g.id]);
+  assert.equal(n, 0);
+});

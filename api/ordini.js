@@ -78,13 +78,17 @@ export default async function handler(req, res) {
   await registra(io.id, stato === 'approvato' ? 'ordine-approvato' : 'ordine-rifiutato', { ordine: o.id });
   if (stato === 'rifiutato') return res.status(200).json({ stato, email: false });
 
+  // The order is approved already: a PDF or email problem must not turn into an error page.
+  let inviata = false;
+  try {
   const pdf = Buffer.from(await pdfOrdine(fatto, io.nome)).toString('base64');
-  const inviata = await invia({
+  inviata = await invia({
     subject: `Ordine ${o.reparto}, ${o.sede}, venerdì ${dataBreve(o.settimana)}`,
     text: `Ordine approvato da ${io.nome}.\nSede: ${o.sede}\nReparto: ${o.reparto}\nSettimana: venerdì ${dataBreve(o.settimana)}\n\nIl PDF è in allegato.`,
     attachments: [{ filename: `Ordine ${o.reparto} ${o.id}.pdf`, content: pdf }],
     chiave: 'ordine-' + o.id,
   });
+  } catch (err) { console.error('PDF', err.message); }
   if (inviata) await q(`UPDATE ordini SET email_inviata = now() WHERE id = $1`, [o.id]);
   else if (inviata === false) await registra(io.id, 'email-fallita', { ordine: o.id });
   return res.status(200).json({ stato, email: inviata === true });

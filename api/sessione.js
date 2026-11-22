@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const p = await chi(req, res);
   if (p) return res.status(200).json({ nome: p.nome, ruolo: p.ruolo, prova });
   const token = leggiCookie(req, 'dispositivo');
-  const [d] = token ? await q(`SELECT 1 FROM dispositivi d JOIN persone p ON p.id = d.persona_id
-    WHERE d.token_hash = $1 AND d.bloccato IS NULL AND p.rimossa IS NULL`, [sha(token)]) : [];
-  return res.status(401).json(d ? { dispositivo: true, prova } : { prova });
+  const [d] = token ? await q(`SELECT d.bloccato IS NOT NULL AS bloccato FROM dispositivi d JOIN persone p ON p.id = d.persona_id
+    WHERE d.token_hash = $1 AND p.rimossa IS NULL`, [sha(token)]) : [];
+  return res.status(401).json(d ? { dispositivo: true, bloccato: d.bloccato, prova } : { prova });
 }

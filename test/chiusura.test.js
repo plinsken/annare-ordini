@@ -82,10 +82,13 @@ test('previews never email, but still close', async () => {
 
 test('retention: old orders and log go, recent stay', async () => {
   await richiesta(anna, '2024-01-05');
+  await q(`INSERT INTO ordini (settimana, sede, reparto, righe, righe_originali) VALUES ('2023-06-02', 'Bianconi', 'Sala', '[]', '[]')`);
   await q(`INSERT INTO registro (quando, azione) VALUES (now() - interval '400 days', 'vecchio'), (now(), 'nuovo')`);
   await chiudi(new Date());
   const [{ n }] = await q(`SELECT count(*)::int n FROM richieste WHERE settimana = '2024-01-05'`);
   assert.equal(n, 0);
+  const [{ w }] = await q(`SELECT count(*)::int w FROM ordini WHERE settimana = '2023-06-02'`);
+  assert.equal(w, 1, 'an order still waiting for approval is never deleted');
   assert.deepEqual((await q(`SELECT azione FROM registro WHERE azione IN ('vecchio','nuovo')`)).map(r => r.azione), ['nuovo']);
 });
 

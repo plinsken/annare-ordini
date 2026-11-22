@@ -33,10 +33,12 @@ export default async function handler(req, res) {
   }
 
   const pid = Number(req.method === 'DELETE' ? req.query?.persona : b.persona);
-  const [p] = Number.isInteger(pid) ? await q(`SELECT id FROM persone WHERE id = $1 AND rimossa IS NULL`, [pid]) : [];
+  const [p] = Number.isInteger(pid) ? await q(`SELECT id, ruolo FROM persone WHERE id = $1 AND rimossa IS NULL`, [pid]) : [];
   if (!p) return res.status(404).json({ errore: 'Persona non trovata.' });
 
   if (req.method === 'POST' && b.azione === 'codice') {
+    // An admin code from the app would let anyone holding Gabriele's unlocked phone make their own approving passkey.
+    if (p.ruolo === 'admin') return res.status(403).json({ errore: 'Il codice per Gabriele lo crea Tom.' });
     const codice = await nuovoCodice(pid);
     await registra(io.id, 'codice-creato', { persona: pid });
     return res.status(200).json({ codice });

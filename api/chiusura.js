@@ -52,7 +52,7 @@ async function avvisa() {
 
 const pulisci = () => tx([
   [`DELETE FROM richieste WHERE settimana < (now() - interval '2 years')::date`, []],
-  [`DELETE FROM ordini WHERE settimana < (now() - interval '2 years')::date`, []],
+  [`DELETE FROM ordini WHERE settimana < (now() - interval '2 years')::date AND stato <> 'da_approvare'`, []],
   [`DELETE FROM settimane WHERE settimana < (now() - interval '2 years')::date`, []],
   [`DELETE FROM registro WHERE quando < now() - interval '1 year'`, []],
   [`DELETE FROM sessioni WHERE scade < now()`, []],

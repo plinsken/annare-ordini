@@ -88,6 +88,9 @@ test('PIN fallback: tied to the phone, 5 wrong tries lock it, admins cannot use 
 
   for (let i = 0; i < 4; i++) assert.equal((await pin('000000')).code, 401);
   assert.equal((await pin('000000')).code, 423);
+  await chiama(sessione, 'DELETE', undefined, {}, jar);
+  const st = await chiama(sessione, 'GET', undefined, {}, jar);
+  assert.deepEqual([st.code, st.body.dispositivo, st.body.bloccato], [401, true, true], 'the app can show the locked message');
   const bloccato = await pin('123456');
   assert.equal(bloccato.code, 423);
   assert.equal(bloccato.body.errore, 'Telefono bloccato. Chiedi un nuovo codice a Gabriele.');
@@ -114,4 +117,12 @@ test('PIN is stored salted; code redemption is rate limited', async () => {
   const r = await chiama(attiva, 'POST', { passo: 'codice', codice: 'XXXXXXXXXX' }, { ip });
   assert.equal(r.code, 429);
   assert.equal(r.body.errore, 'Troppi tentativi. Riprova tra qualche minuto.');
+});
+
+test('successful activations from one Wi-Fi do not use up the limit', async () => {
+  const ip = nuovoIp();
+  for (let i = 0; i < 12; i++) {
+    const a = await chiama(attiva, 'POST', { passo: 'codice', codice: await nuovoCodice(await persona('W' + i)) }, { ip });
+    assert.equal(a.code, 200, 'activation ' + (i + 1));
+  }
 });

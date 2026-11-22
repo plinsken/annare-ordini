@@ -26,5 +26,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/ordini.js": {
+      "includeFiles": "api/_fonti/**"
+    }
+  }
 }

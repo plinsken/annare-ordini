@@ -54,7 +54,7 @@ $("#g-ordini").addEventListener("click", async e => {
 async function caricaPersone(){
   const r = await api("/api/persone");
   if (errore(r)) return;
-  $("#g-persone").innerHTML = r.d.map(p => `<div class="riga" data-persona="${p.id}" data-nome="${esc(p.nome)}"><span class="nome">${esc(p.nome)}<span class="dett">${p.ruolo === "admin" ? "Gestione · " : ""}${LOGIN[p.accesso]}${p.bloccato ? " · PIN bloccato" : ""}</span></span><span class="azioni"><button class="indietro" data-azione="codice">Codice</button>${p.ruolo === "admin" && p.nome === st.nome ? "" : `<button class="indietro" data-azione="telefono-perso">Perso</button><button class="indietro" data-azione="rimuovi">Togli</button>`}</span></div>`).join("");
+  $("#g-persone").innerHTML = r.d.map(p => `<div class="riga" data-persona="${p.id}" data-nome="${esc(p.nome)}"><span class="nome">${esc(p.nome)}<span class="dett">${p.ruolo === "admin" ? "Gestione · " : ""}${LOGIN[p.accesso]}${p.bloccato ? " · PIN bloccato" : ""}</span></span>${p.ruolo === "admin" ? "" : `<span class="azioni"><button class="indietro" data-azione="codice">Codice</button><button class="indietro" data-azione="telefono-perso">Perso</button><button class="indietro" data-azione="rimuovi">Togli</button></span>`}</div>`).join("");
 }
 function mostraCodice(nome, codice){
   $("#g-codice").hidden = false;

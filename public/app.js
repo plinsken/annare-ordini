@@ -34,7 +34,7 @@ async function sessione(){
   const r = await api("/api/sessione");
   st.prova = !!r.d.prova; $(".prova").hidden = !st.prova;
   if (r.ok) { st.nome = r.d.nome; st.ruolo = r.d.ruolo; return dopoAccesso(); }
-  if (r.status === 401) vai(r.d.dispositivo ? "pin" : "accesso");
+  if (r.status === 401) { vai(r.d.dispositivo ? "pin" : "accesso"); $("#err-pin").textContent = r.d.bloccato ? "Telefono bloccato. Chiedi un nuovo codice a Gabriele." : ""; }
   else if (r.status) { $("#err-accesso").textContent = r.d.errore || "Servizio non disponibile."; vai("accesso"); }
 }
 function dopoAccesso(){
@@ -53,7 +53,7 @@ $("#entra").onclick = async () => {
     if (!o.ok) { err.textContent = o.d.errore || "Accesso non riuscito."; return; }
     let risposta;
     try { risposta = await WA.startAuthentication({optionsJSON: o.d.opzioni}); }
-    catch (e) { err.textContent = "Accesso annullato. Riprova, oppure attiva il telefono con un codice."; return; }
+    catch (e) { err.textContent = "Accesso non riuscito. Riprova. Se entravi con il PIN, questo telefono non è più attivo: chiedi un nuovo codice a Gabriele."; return; }
     const v = await api("/api/accesso", "POST", {passo: "verifica", sfida: o.d.sfida, risposta});
     if (!v.ok) { err.textContent = v.d.errore || "Accesso non riuscito."; return; }
     entrato(v.d);
@@ -205,7 +205,9 @@ async function mie(){
 }
 function caricaRichiesta(r){
   pulisci();st.sede=r.sede;st.reparto=r.reparto;
-  for(const l of r.righe){if(l.cat==="Altro"){st.altroNome=l.nome;st.altroQ=l.q==null?"":String(l.q)}else{st.q[key(l.cat,l.nome)]=l.q;st.aperte[l.cat]=true}}
+  const spariti=[];
+  for(const l of r.righe){if(l.cat==="Altro"){st.altroNome=l.nome;st.altroQ=l.q==null?"":String(l.q)}else if((DATI[r.reparto]?.[l.cat]||[]).some(p=>p[0]===l.nome)){st.q[key(l.cat,l.nome)]=l.q;st.aperte[l.cat]=true}else spariti.push(l.nome)}
+  if(spariti.length)alert((spariti.length===1?spariti[0]+" non è più in lista":spariti.join(", ")+" non sono più in lista")+". Aggiungilo di nuovo o scrivilo in \"Altro prodotto\", altrimenti con il salvataggio sparisce dalla richiesta.");
   st.note=r.nota||"";st.modifica=r.id;st.modificaSettimana=r.settimana;
   $("#altro-nome").value=st.altroNome;$("#altro-q").value=st.altroQ;$("#note").value=st.note;
   inizio();apriLista();

@@ -2,7 +2,7 @@
 import { entrata, creaSessione, cookie, aggiungiCookie, nuovoToken, sha } from './_sessioni.js';
 import { trovaCodice, codiceDaHash, consumaCodice, pinValido, hashPin } from './_codici.js';
 import { opzioniRegistrazione, verificaRegistrazione, salvaPasskey, salvaSfida, prendiSfida } from './_passkey.js';
-import { limite, ipDi } from './_limiti.js';
+import { limite, sotto, ipDi } from './_limiti.js';
 import { registra } from './_registro.js';
 import { q } from './_db.js';
 
@@ -16,9 +16,11 @@ export default async function handler(req, res) {
   const b = req.body || {};
 
   if (b.passo === 'codice') {
-    if (!await limite('attiva:' + ipDi(req), 10, 900)) return res.status(429).json({ errore: 'Troppi tentativi. Riprova tra qualche minuto.' });
+    // Only wrong codes count, so a whole kitchen on one Wi-Fi can activate on launch day.
+    const chiave = 'attiva:' + ipDi(req);
+    if (!await sotto(chiave, 10, 900)) return res.status(429).json({ errore: 'Troppi tentativi. Riprova tra qualche minuto.' });
     const c = await trovaCodice(b.codice);
-    if (!c) { await registra(null, 'accesso-fallito', { tipo: 'codice' }); return res.status(401).json({ errore: 'Codice non valido o scaduto.' }); }
+    if (!c) { await limite(chiave, 10, 900); await registra(null, 'accesso-fallito', { tipo: 'codice' }); return res.status(401).json({ errore: 'Codice non valido o scaduto.' }); }
     const opzioni = await opzioniRegistrazione({ id: c.personaId, nome: c.nome }, e.s);
     const sfida = await salvaSfida('attiva', opzioni.challenge, c.personaId, { codice: c.hash });
     return res.status(200).json({ sfida, opzioni, ruolo: c.ruolo, nome: c.nome });

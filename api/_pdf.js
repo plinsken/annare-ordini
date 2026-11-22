@@ -4,9 +4,13 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { dataBreve } from './_settimana.js';
 
-const file = n => readFileSync(new URL(`./_fonti/${n}`, import.meta.url));
+// Literal paths so Vercel's file tracing bundles them (vercel.json also lists api/_fonti).
 let risorse;
-const carica = () => (risorse ??= { isr: file('isr.ttf'), isi: file('isi.ttf'), m4: file('m4.ttf'), m7: file('m7.ttf'), logo: file('logo.png') });
+const carica = () => (risorse ??= {
+  isr: readFileSync(new URL('./_fonti/isr.ttf', import.meta.url)), isi: readFileSync(new URL('./_fonti/isi.ttf', import.meta.url)),
+  m4: readFileSync(new URL('./_fonti/m4.ttf', import.meta.url)), m7: readFileSync(new URL('./_fonti/m7.ttf', import.meta.url)),
+  logo: readFileSync(new URL('./_fonti/logo.png', import.meta.url)),
+});
 
 export async function creaPdf(o) {
   const R = carica();
