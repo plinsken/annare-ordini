@@ -1,0 +1,759 @@
+{
+  "sedi": [
+    "Regina Margherita",
+    "Bianconi"
+  ],
+  "reparti": {
+    "Pizzeria": {
+      "Farine e lievito": [
+        [
+          "Farina 00 Caputo Saccorosso",
+          "",
+          "sacco 25 kg"
+        ],
+        [
+          "Farina Caputo Nuvola",
+          "",
+          "sacco 25 kg"
+        ],
+        [
+          "Semola rimacinata",
+          "",
+          "sacco 5 kg"
+        ],
+        [
+          "Lievito di birra fresco",
+          "",
+          "500 g"
+        ]
+      ],
+      "Pomodoro": [
+        [
+          "Datterini rossi",
+          "",
+          "latta 800 g"
+        ],
+        [
+          "Datterini gialli",
+          "",
+          "latta 800 g"
+        ]
+      ],
+      "Latticini": [
+        [
+          "Grana Padano DOP a pezzi",
+          "",
+          "trancio ~5 kg"
+        ],
+        [
+          "Grana Padano DOP grattugiato",
+          "",
+          "busta 1 kg"
+        ],
+        [
+          "Pecorino grattugiato",
+          "",
+          ""
+        ],
+        [
+          "Grattugiato fresco mix",
+          "",
+          "busta 1 kg"
+        ],
+        [
+          "Gorgonzola DOP piccante",
+          "",
+          "~1,5 kg"
+        ],
+        [
+          "Provolone dolce",
+          "",
+          "~2 kg"
+        ],
+        [
+          "Brie",
+          "",
+          "forma 1 kg"
+        ]
+      ],
+      "Salumi": [
+        [
+          "Prosciutto cotto",
+          "",
+          "intero ~8 kg"
+        ],
+        [
+          "Prosciutto crudo di Parma DOP",
+          "",
+          "disossato ~9 kg"
+        ],
+        [
+          "Speck",
+          "",
+          "mezzo ~2,5 kg"
+        ],
+        [
+          "Pancetta arrotolata",
+          "",
+          "~3 kg"
+        ],
+        [
+          "Salame Napoli",
+          "",
+          "~1 kg"
+        ],
+        [
+          "Spianata piccante",
+          "",
+          "~1,6 kg"
+        ],
+        [
+          "Mortadella",
+          "",
+          "mezza ~5,5 kg"
+        ],
+        [
+          "Wurstel pollo e tacchino",
+          "",
+          "1 kg"
+        ]
+      ],
+      "Conserve e creme": [
+        [
+          "Filetti di acciughe",
+          "",
+          "vaso 720 g"
+        ],
+        [
+          "Olive taggiasche denocciolate",
+          "",
+          "vaso 900 g"
+        ],
+        [
+          "Capperi in olio",
+          "",
+          "vaso 520 g"
+        ],
+        [
+          "Tonno all'olio",
+          "",
+          "tris 3 x 70 g"
+        ],
+        [
+          "Funghi champignon trifolati",
+          "",
+          "latta 2,5 kg"
+        ],
+        [
+          "Crema di pistacchio",
+          "",
+          "vaso 520 g"
+        ],
+        [
+          "Nutella",
+          "",
+          "vasetto 950 g"
+        ],
+        [
+          "Granella di pistacchio",
+          "",
+          "1 kg"
+        ],
+        [
+          "Pesto genovese senza aglio",
+          "",
+          "1,5 kg"
+        ],
+        [
+          "Salsa di noci",
+          "",
+          "vaso 1 kg"
+        ]
+      ],
+      "Surgelati": [
+        [
+          "Funghi porcini",
+          "",
+          "busta 1 kg"
+        ],
+        [
+          "Carciofi a spicchi",
+          "",
+          "busta 2,5 kg"
+        ]
+      ],
+      "Dispensa": [
+        [
+          "Olio extravergine d'oliva",
+          "",
+          "tanica 5 L"
+        ],
+        [
+          "Sale fino",
+          "",
+          "1 kg"
+        ],
+        [
+          "Origano",
+          "",
+          "barattolo 115 g"
+        ],
+        [
+          "Noci sgusciate",
+          "",
+          "busta 1 kg"
+        ]
+      ],
+      "Materiale": [
+        [
+          "Fogli per affettati 18x25",
+          "",
+          "conf. 2,5 kg"
+        ]
+      ]
+    },
+    "Cucina": {
+      "Pomodoro": [
+        [
+          "Passata di pomodoro",
+          "",
+          "latta 2,5 kg"
+        ],
+        [
+          "Pomodorini interi",
+          "",
+          "latta 2,5 kg"
+        ]
+      ],
+      "Latticini": [
+        [
+          "Grana Padano DOP grattugiato",
+          "",
+          "busta 1 kg"
+        ],
+        [
+          "Pecorino grattugiato",
+          "",
+          ""
+        ]
+      ],
+      "Salumi": [
+        [
+          "Pancetta arrotolata",
+          "",
+          "~3 kg"
+        ],
+        [
+          "Guanciale",
+          "",
+          ""
+        ]
+      ],
+      "Conserve e creme": [
+        [
+          "Filetti di acciughe",
+          "",
+          "vaso 720 g"
+        ],
+        [
+          "Olive taggiasche denocciolate",
+          "",
+          "vaso 900 g"
+        ],
+        [
+          "Capperi in olio",
+          "",
+          "vaso 520 g"
+        ],
+        [
+          "Tonno all'olio",
+          "",
+          "tris 3 x 70 g"
+        ]
+      ],
+      "Dispensa": [
+        [
+          "Olio extravergine d'oliva",
+          "",
+          "tanica 5 L"
+        ],
+        [
+          "Sale fino",
+          "",
+          "1 kg"
+        ],
+        [
+          "Olio di semi di girasole",
+          "",
+          "tanica 25 L"
+        ],
+        [
+          "Olio di sansa",
+          "",
+          "tanica 5 L"
+        ],
+        [
+          "Aceto di vino bianco",
+          "",
+          "1 L"
+        ],
+        [
+          "Vino bianco da cucina",
+          "",
+          "brik 1 L"
+        ],
+        [
+          "Sale grosso",
+          "",
+          "1 kg"
+        ],
+        [
+          "Peperoncino frantumato",
+          "",
+          "1 kg"
+        ],
+        [
+          "Fondo bruno granulare",
+          "",
+          "500 g"
+        ],
+        [
+          "Biscotti Digestive",
+          "",
+          "400 g"
+        ],
+        [
+          "Amido di mais (Maizena)",
+          "",
+          "2,5 kg"
+        ],
+        [
+          "Fagioli borlotti lessati",
+          "",
+          "latta 2,5 kg"
+        ],
+        [
+          "Ceci lessati",
+          "",
+          "latta 2,6 kg"
+        ],
+        [
+          "Pangrattato",
+          "",
+          "500 g"
+        ]
+      ],
+      "Carne": [
+        [
+          "Petto di pollo",
+          "",
+          "~2,5 kg"
+        ],
+        [
+          "Cosce di pollo",
+          "",
+          "~3 kg"
+        ],
+        [
+          "Lonza / filone di maiale",
+          "",
+          "~4 kg"
+        ],
+        [
+          "Costine di maiale",
+          "",
+          "~5 kg"
+        ],
+        [
+          "Muscolo di manzo",
+          "",
+          "~2 kg"
+        ],
+        [
+          "Cube roll di manzo",
+          "",
+          "~2,5 kg"
+        ],
+        [
+          "Macinato di manzo",
+          "",
+          "1 kg"
+        ],
+        [
+          "Hamburger 150 g",
+          "",
+          "cartone 6 kg"
+        ]
+      ],
+      "Pesce": [
+        [
+          "Polpo",
+          "pezzatura 2-3 kg, in vassoio",
+          "1 pezzo da 2-3 kg"
+        ],
+        [
+          "Polpo piccolo",
+          "calibro 10/20 pezzi per kg, surgelato",
+          "cartone 5,4 kg"
+        ],
+        [
+          "Calamari indiani",
+          "taglia U3, surgelati (Metro)",
+          "busta 800 g"
+        ],
+        [
+          "Calamaro intero piccolo",
+          "3-5 cm, Cina, congelato (MARR)",
+          "cartone 9 kg"
+        ],
+        [
+          "Calamaro B.Line",
+          "taglia C4L, congelato (MARR)",
+          "cartone ~5 kg"
+        ],
+        [
+          "Anelli di totano",
+          "totano gigante del Pacifico, decongelato",
+          "~5 kg"
+        ],
+        [
+          "Salmone Norvegia",
+          "intero, pezzatura 5-6 kg, allevato",
+          "1 pezzo da 5-6 kg"
+        ],
+        [
+          "Baccalà filetti ammollati",
+          "filetti da oltre 1 kg",
+          "~2,5 kg"
+        ],
+        [
+          "Pesce spada",
+          "filone senza pelle",
+          "1 filone ~7-8 kg"
+        ],
+        [
+          "Filetti di orata",
+          "filetti da 120-160 g, surgelati",
+          "cartone 4 kg"
+        ],
+        [
+          "Filetti di spigola",
+          "filetti da 120-160 g, Pacifico, surgelati",
+          "cartone 4 kg"
+        ],
+        [
+          "Filetti di merluzzo nordico",
+          "filetti da 500-1000 g, surgelati",
+          "cartone 5 kg"
+        ],
+        [
+          "Filetti di gallinella",
+          "filetti con pelle da 100-150 g, surgelati",
+          "cartone 5,4 kg"
+        ],
+        [
+          "Alici",
+          "pescate a lampara, calibro 60/80 pezzi per kg",
+          "~2,5 kg"
+        ],
+        [
+          "Mazzancolle intere",
+          "Ecuador, calibro 50/60 pezzi per kg, surgelate",
+          "busta 2 kg"
+        ],
+        [
+          "Gamberi argentini",
+          "senza testa, taglia SC1",
+          "2 kg"
+        ],
+        [
+          "Vongole veraci",
+          "grandi, allevate in Italia",
+          "a kg"
+        ],
+        [
+          "Cozze",
+          "Arborea (Sardegna)",
+          "a kg"
+        ],
+        [
+          "Lupini",
+          "grandi extra",
+          "a kg"
+        ]
+      ],
+      "Latticini e uova": [
+        [
+          "Burro",
+          "",
+          "1 kg"
+        ],
+        [
+          "Panna da cucina",
+          "",
+          "1 L"
+        ],
+        [
+          "Panna vegetale Hoplà",
+          "",
+          "1 L"
+        ],
+        [
+          "Mascarpone",
+          "",
+          "500 g"
+        ],
+        [
+          "Philadelphia",
+          "",
+          "1,65 kg"
+        ],
+        [
+          "Uova medie",
+          "",
+          "vassoio da 90"
+        ],
+        [
+          "Tuorlo d'uovo",
+          "",
+          "1 kg"
+        ]
+      ],
+      "Pasta e riso": [
+        [
+          "Penne rigate",
+          "",
+          "1 kg"
+        ],
+        [
+          "Rigatoni",
+          "",
+          "1 kg"
+        ],
+        [
+          "Mezze maniche",
+          "",
+          "1 kg"
+        ],
+        [
+          "Orecchiette",
+          "",
+          "1 kg"
+        ],
+        [
+          "Caserecce",
+          "",
+          "1 kg"
+        ],
+        [
+          "Fusilli",
+          "",
+          "1 kg"
+        ],
+        [
+          "Spaghettoni",
+          "",
+          "1 kg"
+        ],
+        [
+          "Sedanini",
+          "",
+          "1 kg"
+        ],
+        [
+          "Bucatini",
+          "",
+          "500 g"
+        ],
+        [
+          "Pasta mista (mescafrancesca)",
+          "",
+          "500 g"
+        ],
+        [
+          "Riso Carnaroli",
+          "",
+          "1 kg"
+        ],
+        [
+          "Riso Vialone nano",
+          "",
+          "1 kg"
+        ],
+        [
+          "Riso basmati",
+          "",
+          "1 kg"
+        ]
+      ],
+      "Surgelati": [
+        [
+          "Patate fritte 9x9",
+          "",
+          "busta 2,5 kg"
+        ],
+        [
+          "Fagiolini fini",
+          "",
+          "busta 2,5 kg"
+        ],
+        [
+          "Broccoli a rosette",
+          "",
+          "busta 2,25 kg"
+        ],
+        [
+          "Cavolfiore a rosette",
+          "",
+          "busta 2,5 kg"
+        ],
+        [
+          "Broccolo romanesco",
+          "",
+          "busta 2,5 kg"
+        ],
+        [
+          "Carotine baby",
+          "",
+          "busta 2,5 kg"
+        ],
+        [
+          "Piselli fini",
+          "",
+          "busta 2,5 kg"
+        ],
+        [
+          "Spinaci a cubetti",
+          "",
+          "busta 2,5 kg"
+        ]
+      ],
+      "Dolci": [
+        [
+          "Zucchero a velo",
+          "",
+          "1 kg"
+        ],
+        [
+          "Savoiardi",
+          "",
+          "2,4 kg"
+        ],
+        [
+          "Topping frutti di bosco",
+          "",
+          "1 kg"
+        ],
+        [
+          "Topping al cioccolato",
+          "",
+          "1 kg"
+        ],
+        [
+          "Topping al caramello",
+          "",
+          "1 kg"
+        ]
+      ],
+      "Materiale": [
+        [
+          "Buste sottovuoto 30x40",
+          "",
+          "100 pz"
+        ],
+        [
+          "Etichette removibili",
+          "",
+          "500 pz"
+        ],
+        [
+          "Sac à poche",
+          "",
+          "100 pz"
+        ],
+        [
+          "Carta paglia 40x60",
+          "",
+          "10 kg"
+        ]
+      ]
+    },
+    "Bar": {
+      "Latte e bevande": [
+        [
+          "Latte intero per cappuccino",
+          "",
+          "1 L"
+        ],
+        [
+          "Latte scremato",
+          "",
+          "1 L"
+        ],
+        [
+          "Bevanda di soia Barista",
+          "",
+          "1 L"
+        ],
+        [
+          "Bevanda d'avena Barista",
+          "",
+          "1 L"
+        ],
+        [
+          "Panna spray",
+          "",
+          "700 ml"
+        ]
+      ],
+      "Snack": [
+        [
+          "Arachidi",
+          "",
+          "1 kg"
+        ],
+        [
+          "Taralli",
+          "",
+          "2 kg"
+        ],
+        [
+          "Taralli al finocchio",
+          "",
+          "1 kg"
+        ],
+        [
+          "Patatine classiche",
+          "",
+          "450 g"
+        ]
+      ]
+    },
+    "Sala": {
+      "Tavola": [
+        [
+          "Kit posate + tovagliolo",
+          "",
+          "50 pz"
+        ],
+        [
+          "Olio EVO al peperoncino",
+          "",
+          "bottiglia 250 ml"
+        ]
+      ],
+      "Cassa": [
+        [
+          "Rotoli registratore di cassa 80x80",
+          "",
+          "10 pz"
+        ],
+        [
+          "Rotoli POS 57 mm",
+          "",
+          "50 pz"
+        ]
+      ]
+    }
+  }
+}
