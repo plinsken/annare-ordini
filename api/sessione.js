@@ -1,26 +1,20 @@
-// GET: who is logged in. POST {codice}: log in. DELETE: log out.
-import { GIORNI, norm, staff, creaToken, chi, cookie } from './_auth.js';
+// GET: who is logged in (401 with dispositivo:true when this phone has a PIN login). DELETE: log out.
+import { entrata, chi, esci, aggiungiCookie, leggiCookie, sha } from './_sessioni.js';
+import { q } from './_db.js';
 
-export default function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-  if (req.method === 'GET') {
-    const nome = chi(req);
-    return nome ? res.status(200).json({ nome }) : res.status(401).json({});
-  }
+export default async function handler(req, res) {
+  const e = await entrata(req, res, 'nessuno');
+  if (!e) return;
+  const prova = e.s.prova;
   if (req.method === 'DELETE') {
-    res.setHeader('Set-Cookie', cookie('', 0));
+    aggiungiCookie(res, await esci(req));
     return res.status(204).end();
   }
-  if (req.method !== 'POST') return res.status(405).end();
-
-  const codice = norm(req.body?.codice);
-  const nome = codice && staff().get(codice);
-  if (!nome) return res.status(401).json({ errore: 'Codice non valido.' });
-  try {
-    res.setHeader('Set-Cookie', cookie(creaToken(nome, codice), GIORNI * 86400));
-  } catch (e) {
-    console.error(e.message);
-    return res.status(503).json({ errore: "L'accesso non è ancora configurato." });
-  }
-  return res.status(200).json({ nome });
+  if (req.method !== 'GET') return res.status(405).end();
+  const p = await chi(req, res);
+  if (p) return res.status(200).json({ nome: p.nome, ruolo: p.ruolo, prova });
+  const token = leggiCookie(req, 'dispositivo');
+  const [d] = token ? await q(`SELECT 1 FROM dispositivi d JOIN persone p ON p.id = d.persona_id
+    WHERE d.token_hash = $1 AND d.bloccato IS NULL AND p.rimossa IS NULL`, [sha(token)]) : [];
+  return res.status(401).json(d ? { dispositivo: true, prova } : { prova });
 }

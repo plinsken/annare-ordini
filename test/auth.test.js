@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 const ENV = { STAFF: 'Mario Rossi:K7P2X-9QWMT,Anna:H3M8RT2ZQA,Corto:ABC123', SESSION_SECRET: 'x'.repeat(40) };
 Object.assign(process.env, ENV);
 const { staff, creaToken, leggiToken, chi } = await import('../api/_auth.js');
-const sessione = (await import('../api/sessione.js')).default;
 const ordine = (await import('../api/ordine.js')).default;
 
 const finto = () => ({ code: 200, headers: {}, body: undefined,
@@ -33,22 +32,6 @@ test('token: valid, expired, tampered, revoked, no secret', () => {
   assert.equal(leggiToken(t, { ...ENV, SESSION_SECRET: '' }, 2000), null, 'no secret');
   assert.equal(leggiToken('garbage', ENV), null);
   assert.equal(leggiToken(undefined, ENV), null);
-});
-
-test('login endpoint sets a secure cookie, wrong code gets 401', () => {
-  let r = finto(); sessione(req('POST', { codice: 'nope' }), r);
-  assert.equal(r.code, 401); assert.equal(r.headers['set-cookie'], undefined);
-
-  r = finto(); sessione(req('POST', { codice: ' h3m8-rt2zqa ' }), r);
-  assert.equal(r.code, 200); assert.deepEqual(r.body, { nome: 'Anna' });
-  const c = r.headers['set-cookie'];
-  assert.match(c, /HttpOnly/); assert.match(c, /Secure/); assert.match(c, /SameSite=Lax/);
-
-  const cookie = c.split(';')[0];
-  r = finto(); sessione(req('GET', undefined, `altro=1; ${cookie}`), r);
-  assert.deepEqual(r.body, { nome: 'Anna' });
-  r = finto(); sessione(req('GET', undefined, ''), r);
-  assert.equal(r.code, 401);
 });
 
 test('order endpoint: 401 without login, emails with the logged-in name', async () => {
