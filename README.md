@@ -1,54 +1,69 @@
 # Annaré · Ordini interni
 
-Staff ordering app for the two pizzerias. Gabriele built the front end (prototype on Netlify: resilient-paletas-bcb70d.netlify.app). This folder adds a login and the email step.
+Staff ordering app for the two pizzerias. Gabriele built the front end (prototype on Netlify: resilient-paletas-bcb70d.netlify.app). This folder adds secure logins and the weekly order.
 
-- Live: https://ordini.annarepizzeria.com (Vercel project `annare-ordini`, team plinskens-projects). Deploys from GitHub: a push to `main` goes live, other branches get a preview link.
-- `public/`: Gabriele's app (index.html, service worker, icons, pdf-lib + fontkit served by the app itself)
-- `api/sessione.js`: log in with a personal code (POST), check (GET), log out (DELETE)
-- `api/ordine.js`: emails the order PDF to Gabriele, for logged-in staff only
-- `api/_auth.js`: signed session cookie, 90 days, HttpOnly
+- Live: https://ordini.annarepizzeria.com (Vercel project `annare-ordini`, team plinskens-projects, functions in Frankfurt). Deploys from GitHub: a push to `main` goes live.
+- Design: `docs/superpowers/specs/2026-11-17-login-sicuro-e-ordine-settimanale-design.md`. Build plan: `docs/superpowers/plans/`.
 
-## Environment variables (Vercel, Production)
+## How it works
+
+- **Login:** Gabriele adds a person in Gestione and gets a one-time setup code (48 hours). On their own phone the person enters it once and the phone creates a passkey (Face ID, fingerprint or the phone's lock). Phones that can't make one get a 6-digit PIN that only works on that phone; 5 wrong PINs lock it. "Perso" or "Togli" in Gestione shuts the person out at once.
+- **Requests:** cooks send requests any day. They can change or cancel them until **Friday 16:00** (Europe/Rome). Later ones go into the next week.
+- **Friday 16:02:** a Vercel cron closes the week, sums the requests per sede and reparto, and sends **one** email to `ORDINI_A` with a link, no details.
+- **Approval:** Gabriele opens Gestione, can change quantities or remove lines, and approves with Face ID. The approved order goes as a PDF to `ORDINI_A`. Everything is logged.
+
+## Files
+
+- `public/`: the app. `index.html` (screens and styles), `app.js` (staff), `gestione.js` (Gabriele), `prodotti.json` (sedi and products), `sw.js` (offline cache).
+- `api/`: server routes. `_`-prefixed files are shared code, not routes.
+- `db/schema.sql`: database tables. `scripts/migra.js` applies it, `scripts/codice-admin.js` makes an admin setup code.
+
+## Environment variables (Vercel)
 
 | Name | What |
 |---|---|
-| `STAFF` | `Nome:CODICE,Nome2:CODICE2`. Codes are at least 10 characters; shorter ones are ignored. |
-| `SESSION_SECRET` | random, 32+ characters. Changing it logs everyone out. |
-| `RESEND_API_KEY` | Resend key. Without it the app falls back to "download the PDF". |
-| `ORDINI_DA` | sender, e.g. `Annaré Ordini <ordini@annarepizzeria.com>` (domain must be verified in Resend) |
-| `ORDINI_A` | recipient(s), comma-separated |
+| `DATABASE_URL` | Neon Postgres. Production: set by the Neon integration. Preview: only for branch `prova`, pointing at the Neon `dev` branch. |
+| `CRON_SECRET` | random, 32+ characters. Vercel sends it to the Friday cron. |
+| `RESEND_API_KEY` | Resend key. Without it, approvals work but no email goes out (Gabriele downloads the PDF). |
+| `ORDINI_DA` | sender, e.g. `Annaré Ordini <ordini@annarepizzeria.com>` |
+| `ORDINI_A` | recipient(s) of the Friday email and the approved PDFs, comma-separated |
 
-## Staff
+Env changes only apply after `vercel redeploy ordini.annarepizzeria.com`. Don't use `vercel deploy --prod`: it uploads this folder as it is on your Mac and can undo Gabriele's pushes.
 
-New code (10 characters, no 0/O/1/I):
+## Database and admin code
+
+After a schema change, or on a new database:
 
 ```bash
-node -e 'const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";console.log([...require("crypto").randomBytes(10)].map(x=>a[x%32]).join(""))'
+vercel env pull .env.migra --environment production --yes && node --env-file=.env.migra scripts/migra.js && rm .env.migra
 ```
 
-Add, remove or change a person: edit `STAFF` in Vercel, then rebuild what is live (`vercel redeploy ordini.annarepizzeria.com`). Env changes only apply after a redeploy. Don't use `vercel deploy --prod`: it uploads this folder as it is on your Mac and can undo Gabriele's pushes. Removing a person or changing their code ends their sessions on every phone. The name on the order comes from `STAFF`.
+Gabriele lost his phone, or first launch: make him a new admin code (then send it to him):
 
-## Test and deploy
+```bash
+vercel env pull .env.admin --environment production --yes && node --env-file=.env.admin scripts/codice-admin.js "Gabriele" && rm .env.admin
+```
+
+For the `prova` test database use `--environment preview --git-branch prova` instead.
+
+## Test
 
 ```bash
 npm test
 ```
 
-Code changes: commit and push to `main`. Settings changes only:
-
-```bash
-vercel redeploy ordini.annarepizzeria.com
-```
+Tests run on an in-process Postgres (PGlite) and a software passkey, so they need no network.
 
 ## Previews
 
-Preview links are public (the app has its own login), but they use their own Preview settings: a separate `SESSION_SECRET` and a `STAFF` with only a test code, and no Resend key, so a preview never emails a real order and real staff codes don't work there.
+Only the branch `prova` gets a working preview, at its fixed Vercel branch link, with its own test database. It never emails, and Gestione has a "Chiudi la settimana ora" button to try the Friday close. Any other branch shows "Anteprima non configurata."
 
 ## Per Gabriele
 
-- L'app è tutta in `public/index.html`. Modifica lì prodotti, testi e grafica.
-- Ogni modifica su `main` va online da sola su ordini.annarepizzeria.com in circa un minuto. Se vuoi provare prima, lavora su un altro branch: Vercel ti dà un link di prova (lo vedi su GitHub, accanto al commit). Lì entri con il tuo codice di prova, che ti dà Tom. Dal link di prova le email non partono: alla fine esce solo il PDF.
-- Se cambi `public/index.html` o altri file in `public/`, alza il numero in `CACHE` dentro `public/sw.js` (es. `v2` → `v3`), altrimenti i telefoni continuano a vedere la versione vecchia.
-- Non toccare `api/` senza parlarne con Tom: è la parte che controlla i codici e manda le email.
-- I codici dello staff e la chiave Resend non sono qui ma su Vercel. Per aggiungere o togliere persone scrivi a Tom.
+- Prodotti e sedi sono in `public/prodotti.json`. Testi e grafica in `public/index.html`. Il funzionamento è in `public/app.js` (staff) e `public/gestione.js` (la tua sezione).
+- Ogni modifica su `main` va online da sola su ordini.annarepizzeria.com in circa un minuto. Per provare prima, lavora sul branch `prova`: ha il suo link fisso e un database di prova. Lì entri con un codice di prova che ti dà Tom, non partono email e in Gestione c'è "Chiudi la settimana ora".
+- Se cambi un file in `public/`, alza il numero in `CACHE` dentro `public/sw.js` (es. `v3` → `v4`), altrimenti i telefoni continuano a vedere la versione vecchia.
+- Se togli o rinomini un prodotto, le richieste già fatte restano come erano.
+- Non toccare `api/`, `db/` e `vercel.json` senza parlarne con Tom: sono la parte che controlla gli accessi e gli ordini.
+- Le persone le aggiungi e le togli tu dalla sezione Gestione dell'app. Se perdi il telefono, scrivi a Tom per un nuovo codice.
 - Se qualcosa si rompe, Tom può tornare alla versione precedente con un clic.
