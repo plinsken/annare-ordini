@@ -22,3 +22,4 @@ export function scadenza(settimana) {
 }
 
 export const dataBreve = settimana => settimana.slice(8, 10) + '/' + settimana.slice(5, 7);
+export const settimanaDopo = settimana => iso(Date.parse(settimana + 'T00:00:00Z') + 7 * 864e5);

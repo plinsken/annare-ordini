@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { settimanaDi, scadenza, dataBreve } from '../api/_settimana.js';
+import { settimanaDi, scadenza, dataBreve, settimanaDopo } from '../api/_settimana.js';
 
 test('order week: Friday 16:00 Rome cut-off, summer and winter time', () => {
   const S = s => settimanaDi(new Date(s));
@@ -20,4 +20,5 @@ test('cut-off instant and short date', () => {
   assert.equal(scadenza('2026-10-23').toISOString(), '2026-10-23T14:00:00.000Z');
   assert.equal(scadenza('2026-10-30').toISOString(), '2026-10-30T15:00:00.000Z');
   assert.equal(dataBreve('2026-11-27'), '27/11');
+  assert.equal(settimanaDopo('2026-12-25'), '2027-01-01');
 });
