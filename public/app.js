@@ -30,6 +30,10 @@ function inizio(){
   if(!sedi.includes(st.sede))st.sede=sedi.length===1?sedi[0]:"";
   if(st.reparto&&!reparti.includes(st.reparto)){st.reparto="";st.q={};st.aperte={}}
   if(reparti.length===1&&!st.reparto)st.reparto=reparti[0];
+  // One shop and one department: nothing to choose, the product list is home and this page is the menu.
+  st.unico=!!st.nome&&sedi.length===1&&reparti.length===1;
+  $("#dove").hidden=st.unico;$("#vai-lista").textContent=st.unico?"Nuova richiesta":"Avanti";
+  $("#v-lista .testa [data-vai]").textContent=st.unico?"Menu":"Indietro";
   scelte($("#sedi"),sedi.map(s=>[s,""]),st.sede,v=>{st.sede=v;salva();$("#err-inizio").textContent=""});
   scelte($("#reparti"),reparti.map(r=>[r,Object.values(DATI[r]).reduce((a,c)=>a+c.length,0)+" prodotti"]),st.reparto,v=>{if(v!==st.reparto){st.q={};st.aperte={}}st.reparto=v;$("#err-inizio").textContent=""});
 }
@@ -45,6 +49,7 @@ async function sessione(){
 function dopoAccesso(){
   inizio();
   if ((st.approva || st.gestisce) && location.hash === "#gestione") return apriGestione();
+  if (!st.dopo && st.unico) return apriLista();
   vai(st.dopo || "inizio"); st.dopo = "";
 }
 // The session route also says which rights this person has.
@@ -192,7 +197,7 @@ $("#invia").onclick=async()=>{
     pulisci();vai("fatto");
   }finally{btn.disabled=false;btn.textContent=testo}
 };
-$("#nuovo").onclick=()=>{pulisci();inizio();vai("inizio")};
+$("#nuovo").onclick=()=>{pulisci();inizio();st.unico?apriLista():vai("inizio")};
 
 // ---- Le mie richieste ----
 const puoOrdinare=a=>(!st.sedi||st.sedi.includes(a.sede))&&(!st.reparti||st.reparti.includes(a.reparto));
