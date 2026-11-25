@@ -37,7 +37,7 @@ export default async function handler(req, res) {
   if (b.passo === 'pin') {
     const token = leggiCookie(req, 'dispositivo');
     const [d] = token ? await q(`SELECT d.id, d.pin_hash, d.bloccato, p.id AS persona, p.nome, p.ruolo
-      FROM dispositivi d JOIN persone p ON p.id = d.persona_id WHERE d.token_hash = $1 AND p.rimossa IS NULL`, [sha(token)]) : [];
+      FROM dispositivi d JOIN persone p ON p.id = d.persona_id WHERE d.token_hash = $1 AND p.rimossa IS NULL AND p.ruolo = 'staff'`, [sha(token)]) : [];
     if (!d) return res.status(401).json({ errore: NON_ATTIVO });
     if (d.bloccato) return res.status(423).json({ errore: BLOCCATO });
     if (!pinValido(b.pin)) return res.status(400).json({ errore: 'Il PIN deve avere 6 cifre.' });

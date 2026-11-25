@@ -1,18 +1,23 @@
-// Gabriele only. GET list; POST {nome} add staff; POST {persona, azione:'codice'|'telefono-perso'}; DELETE ?persona= remove.
+// Gabriele, and managers allowed to manage people (staff only).
+// GET list; POST {nome} add staff; POST {persona, azione:'codice'|'telefono-perso'}; DELETE ?persona= remove.
+// Gabriele only: POST {persona, azione:'ruolo', ruolo:'staff'|'manager', approva, gestisce}.
+// Anything that hands out power (making a manager, switching a right on, a code for a manager) first answers
+// {conferma, sfida, opzioni}; the same request runs after POST {azione:'conferma', sfida, risposta} with a fresh Face ID.
 import { entrata, revoca } from './_sessioni.js';
 import { nuovoCodice } from './_codici.js';
+import { opzioniAccesso, verificaAccesso, salvaSfida, prendiSfida } from './_passkey.js';
 import { registra } from './_registro.js';
-import { q } from './_db.js';
+import { q, tx } from './_db.js';
 
 const nome = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 
 export default async function handler(req, res) {
-  const e = await entrata(req, res, 'admin');
+  const e = await entrata(req, res, 'gestisce');
   if (!e) return;
-  const io = e.persona;
+  const io = e.persona, admin = io.ruolo === 'admin';
 
   if (req.method === 'GET') {
-    const righe = await q(`SELECT p.id, p.nome, p.ruolo,
+    const righe = await q(`SELECT p.id, p.nome, p.ruolo, p.puo_approvare AS approva, p.puo_gestire AS gestisce,
         EXISTS (SELECT 1 FROM passkey k WHERE k.persona_id = p.id) AS passkey,
         EXISTS (SELECT 1 FROM dispositivi d WHERE d.persona_id = p.id) AS pin,
         EXISTS (SELECT 1 FROM dispositivi d WHERE d.persona_id = p.id AND d.bloccato IS NOT NULL) AS bloccato,
@@ -21,7 +26,19 @@ export default async function handler(req, res) {
     return res.status(200).json(righe.map(({ passkey, pin, ...p }) => ({ ...p, accesso: passkey ? 'passkey' : pin ? 'pin' : 'nessuno' })));
   }
 
-  const b = req.body || {};
+  let b = req.body || {}, confermato = false;
+  if (req.method === 'POST' && b.azione === 'conferma') {
+    const sf = await prendiSfida(b.sfida, 'persone');
+    if (!sf || sf.personaId !== io.id) return res.status(400).json({ errore: 'Conferma scaduta. Riprova.' });
+    if (!await verificaAccesso(b.risposta, sf, e.s, io.id)) return res.status(401).json({ errore: 'Conferma non riuscita. Riprova.' });
+    b = sf.dati; confermato = true;
+  }
+  const conferma = async () => {
+    const opzioni = await opzioniAccesso(e.s, await q(`SELECT id, trasporti FROM passkey WHERE persona_id = $1`, [io.id]));
+    const { persona, azione, ruolo, approva, gestisce } = b;
+    return res.status(200).json({ conferma: true, sfida: await salvaSfida('persone', opzioni.challenge, io.id, { persona, azione, ruolo, approva, gestisce }), opzioni });
+  };
+
   if (req.method === 'POST' && b.nome !== undefined) {
     const n = nome(b.nome);
     if (!n || n.length > 60) return res.status(400).json({ errore: 'Scrivi un nome (massimo 60 caratteri).' });
@@ -33,20 +50,40 @@ export default async function handler(req, res) {
   }
 
   const pid = Number(req.method === 'DELETE' ? req.query?.persona : b.persona);
-  const [p] = Number.isInteger(pid) ? await q(`SELECT id, ruolo FROM persone WHERE id = $1 AND rimossa IS NULL`, [pid]) : [];
+  const [p] = Number.isInteger(pid) ? await q(`SELECT id, ruolo, puo_approvare, puo_gestire FROM persone WHERE id = $1 AND rimossa IS NULL`, [pid]) : [];
   if (!p) return res.status(404).json({ errore: 'Persona non trovata.' });
 
   if (req.method === 'POST' && b.azione === 'codice') {
     // An admin code from the app would let anyone holding Gabriele's unlocked phone make their own approving passkey.
     if (p.ruolo === 'admin') return res.status(403).json({ errore: 'Il codice per Gabriele lo crea Tom.' });
+    if (!admin && p.ruolo !== 'staff') return res.status(403).json({ errore: 'Solo Gabriele può farlo per un responsabile.' });
+    if (p.ruolo === 'manager' && !confermato) return conferma();
     const codice = await nuovoCodice(pid);
     await registra(io.id, 'codice-creato', { persona: pid });
     return res.status(200).json({ codice });
   }
+  if (!admin && p.ruolo !== 'staff') return res.status(403).json({ errore: 'Solo Gabriele può farlo per un responsabile.' });
+  // Doing this to yourself would lock you out until Tom runs the recovery script.
+  if (pid === io.id) return res.status(400).json({ errore: req.method === 'DELETE' ? 'Non puoi rimuovere te stesso.' : 'Non puoi farlo sul tuo account.' });
+
+  if (req.method === 'POST' && b.azione === 'ruolo') {
+    if (!admin) return res.status(403).json({ errore: 'Solo Gabriele può cambiare i ruoli.' });
+    if (p.ruolo === 'admin' || !['staff', 'manager'].includes(b.ruolo) || typeof b.approva !== 'boolean' || typeof b.gestisce !== 'boolean')
+      return res.status(400).json({ errore: 'Richiesta non valida.' });
+    const manager = b.ruolo === 'manager', approva = manager && b.approva, gestisce = manager && b.gestisce;
+    const daPiu = (manager && p.ruolo !== 'manager') || (approva && !p.puo_approvare) || (gestisce && !p.puo_gestire);
+    if (daPiu && !confermato) return conferma();
+    const passi = [[`UPDATE persone SET ruolo = $2, puo_approvare = $3, puo_gestire = $4 WHERE id = $1`, [pid, b.ruolo, approva, gestisce]]];
+    // A new role means a new login length; managers log in with a passkey only, so PIN phones stop working.
+    if (b.ruolo !== p.ruolo) passi.push([`DELETE FROM sessioni WHERE persona_id = $1`, [pid]]);
+    if (manager) passi.push([`DELETE FROM dispositivi WHERE persona_id = $1`, [pid]]);
+    await tx(passi);
+    await registra(io.id, 'ruolo-cambiato', { persona: pid, ruolo: b.ruolo, approva, gestisce });
+    return res.status(200).json({ ok: true });
+  }
+
   const tutto = req.method === 'DELETE';
   if (!tutto && !(req.method === 'POST' && b.azione === 'telefono-perso')) return res.status(400).json({ errore: 'Richiesta non valida.' });
-  // Doing this to yourself would lock you out until Tom runs the recovery script.
-  if (pid === io.id) return res.status(400).json({ errore: tutto ? 'Non puoi rimuovere te stesso.' : 'Non puoi farlo sul tuo account.' });
   await revoca(pid);
   if (tutto) await q(`UPDATE persone SET rimossa = now() WHERE id = $1`, [pid]);
   await registra(io.id, tutto ? 'persona-rimossa' : 'telefono-perso', { persona: pid });

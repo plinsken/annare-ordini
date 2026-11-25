@@ -1,13 +1,15 @@
-// Gabriele's section: orders to approve, people and their codes, recent orders. Uses $, esc, api, vai, st, WA from app.js.
-const g = {ordini: [], q: {}};
+// Gestione: orders to approve, people and their codes, recent orders. Gabriele sees all of it; a manager sees the parts
+// their rights allow. Uses $, esc, api, vai, st, WA from app.js.
+const g = {ordini: [], q: {}, persone: {}};
 const LOGIN = {passkey: "Face ID o impronta", pin: "PIN", nessuno: "da attivare"};
 const codiceLeggibile = c => c.slice(0, 5) + "-" + c.slice(5);
 
 async function apriGestione(){
   if (location.hash !== "#gestione") history.replaceState(null, "", "#gestione");
-  $("#chi-gest").textContent = st.nome; $("#err-gest").textContent = ""; $("#g-prova").hidden = !st.prova;
+  $("#chi-gest").textContent = st.nome; $("#err-gest").textContent = ""; $("#g-prova").hidden = !(st.prova && st.approva);
+  $("#g-sez-ordini").hidden = $("#g-sez-recenti").hidden = !st.approva; $("#g-sez-persone").hidden = !st.gestisce;
   vai("gestione");
-  await Promise.all([caricaOrdini(), caricaPersone()]);
+  await Promise.all([st.approva && caricaOrdini(), st.gestisce && caricaPersone()]);
 }
 function errore(r){ if (r.status === 401) { st.dopo = "gestione"; sessione(); return true; } if (!r.ok) { $("#err-gest").textContent = r.d.errore || "Non riuscito."; return true; } return false; }
 
@@ -54,7 +56,49 @@ $("#g-ordini").addEventListener("click", async e => {
 async function caricaPersone(){
   const r = await api("/api/persone");
   if (errore(r)) return;
-  $("#g-persone").innerHTML = r.d.map(p => `<div class="riga" data-persona="${p.id}" data-nome="${esc(p.nome)}"><span class="nome">${esc(p.nome)}<span class="dett">${p.ruolo === "admin" ? "Gestione · " : ""}${LOGIN[p.accesso]}${p.bloccato ? " · PIN bloccato" : ""}</span></span>${p.ruolo === "admin" ? "" : `<span class="azioni"><button class="indietro" data-azione="codice">Codice</button><button class="indietro" data-azione="telefono-perso">Perso</button><button class="indietro" data-azione="rimuovi">Togli</button></span>`}</div>`).join("");
+  g.persone = Object.fromEntries(r.d.map(p => [p.id, p]));
+  const admin = st.ruolo === "admin";
+  $("#g-persone").innerHTML = r.d.map(p => {
+    // A manager acts on staff only; nobody acts on Gabriele from here.
+    const puo = p.ruolo === "staff" || (admin && p.ruolo === "manager");
+    return `<div class="riga" data-persona="${p.id}" data-nome="${esc(p.nome)}"><span class="nome">${esc(p.nome)}<span class="dett">${RUOLO(p)}${LOGIN[p.accesso]}${p.bloccato ? " · PIN bloccato" : ""}</span></span>${puo ? `<span class="azioni"><button class="indietro" data-azione="codice">Codice</button><button class="indietro" data-azione="telefono-perso">Perso</button><button class="indietro" data-azione="rimuovi">Togli</button>${admin ? `<button class="indietro" data-azione="ruolo">Ruolo</button>` : ""}</span>` : ""}</div>`;
+  }).join("");
+}
+function RUOLO(p){
+  if (p.ruolo === "admin") return "Gestione · ";
+  if (p.ruolo !== "manager") return "";
+  const d = [p.approva && "approva ordini", p.gestisce && "gestisce persone"].filter(Boolean);
+  return "Responsabile" + (d.length ? " (" + d.join(", ") + ")" : ", nessun permesso") + " · ";
+}
+// Sends a people request; when the server asks for Face ID first, asks for it and sends the confirmation.
+async function conConferma(dati){
+  let r = await api("/api/persone", "POST", dati);
+  if (r.ok && r.d.conferma) {
+    let risposta;
+    try { risposta = await WA.startAuthentication({optionsJSON: r.d.opzioni}); }
+    catch (x) { $("#err-gest").textContent = "Conferma annullata. Non è cambiato niente."; return null; }
+    r = await api("/api/persone", "POST", {azione: "conferma", sfida: r.d.sfida, risposta});
+  }
+  return errore(r) ? null : r;
+}
+function editorRuolo(riga, p){
+  document.querySelectorAll("[data-editor]").forEach(x => x.remove());
+  const casella = (c, testo, dett, on) => `<label class="riga"><span class="nome">${testo}${dett ? `<span class="dett">${dett}</span>` : ""}</span><input type="checkbox" data-c="${c}"${on ? " checked" : ""} style="width:22px;height:22px;accent-color:var(--pomodoro)"></label>`;
+  riga.insertAdjacentHTML("afterend", `<div class="scheda" data-editor="${p.id}"><p class="etichetta">Ruolo di ${esc(p.nome)}</p><div class="scelte">` +
+    casella("manager", "Responsabile", "entra solo con Face ID o impronta", p.ruolo === "manager") +
+    casella("approva", "Approva ordini", "", p.approva) + casella("gestisce", "Gestisce persone", "solo lo staff", p.gestisce) +
+    `</div><p class="nota">Dare un ruolo o un permesso chiede il tuo Face ID.</p><div class="azioni"><button class="pill" data-salva>Salva</button><button class="indietro" data-annulla>Annulla</button></div></div>`);
+  const ed = riga.nextElementSibling, c = n => ed.querySelector(`[data-c="${n}"]`);
+  const aggiorna = () => { for (const n of ["approva", "gestisce"]) { c(n).disabled = !c("manager").checked; if (!c("manager").checked) c(n).checked = false; } };
+  c("manager").onchange = aggiorna; aggiorna();
+  ed.querySelector("[data-annulla]").onclick = () => ed.remove();
+  ed.querySelector("[data-salva]").onclick = async e => {
+    e.target.disabled = true; $("#err-gest").textContent = "";
+    try {
+      const r = await conConferma({persona: p.id, azione: "ruolo", ruolo: c("manager").checked ? "manager" : "staff", approva: c("approva").checked, gestisce: c("gestisce").checked});
+      if (r) caricaPersone();
+    } finally { e.target.disabled = false; }
+  };
 }
 function mostraCodice(nome, codice){
   $("#g-codice").hidden = false;
@@ -72,8 +116,11 @@ $("#g-persone").addEventListener("click", async e => {
   const riga = b.closest("[data-persona]"), persona = Number(riga.dataset.persona), nome = riga.dataset.nome, azione = b.dataset.azione;
   if (azione === "telefono-perso" && !confirm(nome + " non potrà più entrare finché non gli dai un nuovo codice. Continuo?")) return;
   if (azione === "rimuovi" && !confirm("Togliere " + nome + " dall'app?")) return;
-  const r = azione === "rimuovi" ? await api("/api/persone?persona=" + persona, "DELETE") : await api("/api/persone", "POST", {persona, azione});
-  if (errore(r)) return;
+  if (azione === "ruolo") return editorRuolo(riga, g.persone[persona]);
+  $("#err-gest").textContent = "";
+  let r = azione === "rimuovi" ? await api("/api/persone?persona=" + persona, "DELETE") : await conConferma({persona, azione});
+  if (azione === "rimuovi" && errore(r)) r = null;
+  if (!r) return;
   if (r.d.codice) mostraCodice(nome, r.d.codice);
   caricaPersone();
 });

@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     if (segreto.length < 16 || !uguale(String(req.headers.authorization ?? ''), 'Bearer ' + segreto)) return res.status(401).end();
     return res.status(200).json(await chiudi(new Date()));
   }
-  const e = await entrata(req, res, 'admin');
+  const e = await entrata(req, res, 'approva');
   if (!e) return;
   if (req.method !== 'POST' || !e.s.prova) return res.status(404).end();
   return res.status(200).json(await chiudi(adesso(), { forza: true }));

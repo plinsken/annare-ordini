@@ -1,4 +1,4 @@
-// Gabriele only. GET: orders waiting and recent (?pdf=<id> downloads an approved one).
+// Gabriele and managers allowed to approve. GET: orders waiting and recent (?pdf=<id> downloads an approved one).
 // POST {passo:'opzioni', ordine, righe:[{indice,q}]} -> passkey challenge holding the edited quantities;
 // POST {passo:'approva', sfida, risposta} -> approves (or rejects when every line is 0) after a fresh verified passkey.
 import { entrata } from './_sessioni.js';
@@ -26,7 +26,7 @@ export async function pdfOrdine(o, approvatoDa) {
 }
 
 export default async function handler(req, res) {
-  const e = await entrata(req, res, 'admin');
+  const e = await entrata(req, res, 'approva');
   if (!e) return;
   const io = e.persona;
 

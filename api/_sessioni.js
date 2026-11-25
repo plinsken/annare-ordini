@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { q, tx } from './_db.js';
 import { sito } from './_sito.js';
 
-export const DURATA = { staff: 30 * 86400, admin: 12 * 3600 };
+export const DURATA = { staff: 30 * 86400, manager: 12 * 3600, admin: 12 * 3600 };
 export const sha = s => createHash('sha256').update(String(s)).digest('hex');
 export const nuovoToken = () => randomBytes(32).toString('base64url');
 export const leggiCookie = (req, nome) => new RegExp(`(?:^|;\\s*)${nome}=([^;]+)`).exec(req.headers.cookie || '')?.[1];
@@ -24,7 +24,7 @@ export async function creaSessione(persona) {
 export async function chi(req, res) {
   const token = leggiCookie(req, 'sessione');
   if (!token) return null;
-  const [p] = await q(`SELECT p.id, p.nome, p.ruolo, s.scade < now() + interval '29 days' AS vecchia
+  const [p] = await q(`SELECT p.id, p.nome, p.ruolo, p.puo_approvare, p.puo_gestire, s.scade < now() + interval '29 days' AS vecchia
     FROM sessioni s JOIN persone p ON p.id = s.persona_id
     WHERE s.token_hash = $1 AND s.scade > now() AND p.rimossa IS NULL`, [sha(token)]);
   if (!p) return null;
@@ -32,7 +32,9 @@ export async function chi(req, res) {
     await q(`UPDATE sessioni SET scade = now() + $2::int * interval '1 second' WHERE token_hash = $1`, [sha(token), DURATA.staff]);
     if (res) aggiungiCookie(res, cookie('sessione', token, DURATA.staff));
   }
-  return { id: p.id, nome: p.nome, ruolo: p.ruolo };
+  // Rights are read on every request, so Gabriele switching one off takes effect at once.
+  const potere = d => p.ruolo === 'admin' || (p.ruolo === 'manager' && d);
+  return { id: p.id, nome: p.nome, ruolo: p.ruolo, approva: potere(p.puo_approvare), gestisce: potere(p.puo_gestire) };
 }
 
 export async function esci(req) {
@@ -50,6 +52,7 @@ export const revoca = personaId => tx([
 ]);
 
 // Common start of every route. Returns null after answering when the request can't go on.
+// serve: 'nessuno' (no login), 'persona', 'approva' (approve orders), 'gestisce' (manage people).
 export async function entrata(req, res, serve = 'persona') {
   res.setHeader('Cache-Control', 'no-store');
   const s = sito();
@@ -59,6 +62,7 @@ export async function entrata(req, res, serve = 'persona') {
   if (serve === 'nessuno') return { s, persona: null };
   const persona = await chi(req, res);
   if (!persona) return stop(401, 'Accesso scaduto.');
-  if (serve === 'admin' && persona.ruolo !== 'admin') return stop(403, 'Solo per Gabriele.');
+  // Fails closed: an unknown `serve` is a right nobody has.
+  if (serve !== 'persona' && persona[serve] !== true) return stop(403, 'Non hai il permesso.');
   return { s, persona };
 }

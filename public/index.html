@@ -200,14 +200,20 @@ textarea.campo{min-height:84px;resize:vertical}
   <div class="testa"><button class="indietro" data-vai="inizio">Indietro</button><span class="chi" id="chi-gest"></span></div>
   <h1 id="t-gest">Gestione <em>ordini</em></h1>
   <p class="errore" id="err-gest" role="alert"></p>
+  <div id="g-sez-ordini">
   <p class="etichetta">Da approvare</p>
   <div id="g-ordini"></div>
+  </div>
+  <div id="g-sez-persone">
   <p class="etichetta">Persone</p>
   <form id="f-persona" class="altro" style="grid-template-columns:1fr auto"><input class="campo" id="g-nome" maxlength="60" placeholder="Nome e cognome" aria-label="Nome della nuova persona"><button class="pill">Aggiungi</button></form>
   <div class="ok" id="g-codice" hidden></div>
   <div class="scelte" id="g-persone" style="margin-top:10px"></div>
+  </div>
+  <div id="g-sez-recenti">
   <p class="etichetta">Approvati di recente</p>
   <div class="scelte" id="g-recenti"></div>
+  </div>
   <div id="g-prova" hidden><p class="etichetta">Solo nella versione di prova</p><button class="pill chiara" id="g-chiudi">Chiudi la settimana ora</button></div>
 </section>
 </div>

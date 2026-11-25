@@ -35,8 +35,10 @@ test('entrata: origin check for writes, roles', async () => {
 
   const staff = await persona('Anna');
   const c = jar(await creaSessione(staff));
-  r = finto(); assert.equal(await entrata(req('GET', undefined, { cookie: c }), r, 'admin'), null);
-  assert.equal(r.code, 403);
+  for (const serve of ['approva', 'gestisce', 'admin']) {
+    r = finto(); assert.equal(await entrata(req('GET', undefined, { cookie: c }), r, serve), null);
+    assert.equal(r.code, 403);
+  }
   r = finto(); const e = await entrata(req('GET', undefined, { cookie: c }), r, 'persona');
   assert.equal(e.persona.nome, 'Anna');
 });

@@ -10,6 +10,7 @@ Staff ordering app for the two pizzerias. Gabriele built the front end (prototyp
 - **Login:** Gabriele adds a person in Gestione and gets a one-time setup code (48 hours). On their own phone the person enters it once and the phone creates a passkey (Face ID, fingerprint or the phone's lock). Phones that can't make one get a 6-digit PIN that only works on that phone; 5 wrong PINs lock it. "Perso" or "Togli" in Gestione shuts the person out at once.
 - **Requests:** cooks send requests any day. They can change or cancel them until **Friday 16:00** (Europe/Rome). Later ones go into the next week.
 - **Friday 16:02:** a Vercel cron closes the week, sums the requests per sede and reparto, and sends **one** email to `ORDINI_A` with a link, no details.
+- **Managers ("Responsabile"):** Gabriele can make a person a manager in Gestione (Ruolo) and switch two rights on or off: approve orders, and manage people (staff only). Making a manager, giving a right, or a code for a manager asks for Gabriele's Face ID. Managers log in with a passkey only, for 12 hours. Only Gabriele makes managers.
 - **Approval:** Gabriele opens Gestione, can change quantities or remove lines, and approves with Face ID. The approved order goes as a PDF to `ORDINI_A`. Everything is logged.
 
 ## Files

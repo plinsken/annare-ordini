@@ -1,6 +1,11 @@
 CREATE TABLE IF NOT EXISTS persone (
-  id serial PRIMARY KEY, nome text NOT NULL, ruolo text NOT NULL CHECK (ruolo IN ('staff','admin')),
+  id serial PRIMARY KEY, nome text NOT NULL, ruolo text NOT NULL CHECK (ruolo IN ('staff','manager','admin')),
   creata timestamptz NOT NULL DEFAULT now(), rimossa timestamptz);
+-- Managers (2026-11-25): rights Gabriele switches on and off; they only count when ruolo = 'manager'.
+ALTER TABLE persone ADD COLUMN IF NOT EXISTS puo_approvare boolean NOT NULL DEFAULT false;
+ALTER TABLE persone ADD COLUMN IF NOT EXISTS puo_gestire boolean NOT NULL DEFAULT false;
+ALTER TABLE persone DROP CONSTRAINT IF EXISTS persone_ruolo_check;
+ALTER TABLE persone ADD CONSTRAINT persone_ruolo_check CHECK (ruolo IN ('staff','manager','admin'));
 CREATE TABLE IF NOT EXISTS codici (
   hash text PRIMARY KEY, persona_id int NOT NULL REFERENCES persone(id),
   scade timestamptz NOT NULL, usato timestamptz);

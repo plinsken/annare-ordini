@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   if (!c) return res.status(400).json({ errore: SCADUTA });
 
   if (b.passo === 'pin') {
-    if (c.ruolo !== 'staff') return res.status(403).json({ errore: 'Gabriele entra solo con la passkey.' });
+    if (c.ruolo !== 'staff') return res.status(403).json({ errore: 'Questo account entra solo con Face ID o impronta.' });
     if (!await consumaCodice(c.hash)) return res.status(400).json({ errore: SCADUTA });
     const token = nuovoToken();
     await q(`INSERT INTO dispositivi (persona_id, token_hash, pin_hash) VALUES ($1, $2, $3)`, [c.personaId, sha(token), await hashPin(b.pin)]);

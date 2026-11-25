@@ -4,7 +4,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const breve = s => s.slice(8, 10) + "/" + s.slice(5, 7);
 const WA = window.SimpleWebAuthnBrowser;
 let DATI = {}, SEDI = [];
-const st = {nome:"", ruolo:"", prova:false, sede:"", reparto:"", q:{}, aperte:{}, altroNome:"", altroQ:"", note:"", modifica:null, modificaSettimana:"", dopo:"", mie:[]};
+const st = {nome:"", ruolo:"", approva:false, gestisce:false, prova:false, sede:"", reparto:"", q:{}, aperte:{}, altroNome:"", altroQ:"", note:"", modifica:null, modificaSettimana:"", dopo:"", mie:[]};
 function salva(){try{localStorage.setItem("annare-ordini",JSON.stringify({sede:st.sede}))}catch(e){}}
 try{const v=JSON.parse(localStorage.getItem("annare-ordini")||"{}");st.sede=v.sede||""}catch(e){}
 
@@ -24,7 +24,7 @@ function scelte(el,lista,att,on){el.innerHTML=lista.map(([v,s])=>`<button class=
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{on(b.dataset.v);el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b))})}
 function inizio(){
   $("#nome").textContent=st.nome;
-  $("#vai-gestione").hidden=st.ruolo!=="admin";
+  $("#vai-gestione").hidden=!(st.approva||st.gestisce);
   scelte($("#sedi"),SEDI.map(s=>[s,""]),st.sede,v=>{st.sede=v;salva();$("#err-inizio").textContent=""});
   scelte($("#reparti"),Object.keys(DATI).map(r=>[r,Object.values(DATI[r]).reduce((a,c)=>a+c.length,0)+" prodotti"]),st.reparto,v=>{if(v!==st.reparto){st.q={};st.aperte={}}st.reparto=v;$("#err-inizio").textContent=""});
 }
@@ -33,16 +33,17 @@ function inizio(){
 async function sessione(){
   const r = await api("/api/sessione");
   st.prova = !!r.d.prova; $(".prova").hidden = !st.prova;
-  if (r.ok) { st.nome = r.d.nome; st.ruolo = r.d.ruolo; return dopoAccesso(); }
+  if (r.ok) { Object.assign(st, {nome: r.d.nome, ruolo: r.d.ruolo, approva: !!r.d.approva, gestisce: !!r.d.gestisce}); return dopoAccesso(); }
   if (r.status === 401) { vai(r.d.dispositivo ? "pin" : "accesso"); $("#err-pin").textContent = r.d.bloccato ? "Telefono bloccato. Chiedi un nuovo codice a Gabriele." : ""; }
   else if (r.status) { $("#err-accesso").textContent = r.d.errore || "Servizio non disponibile."; vai("accesso"); }
 }
 function dopoAccesso(){
   inizio();
-  if (st.ruolo === "admin" && location.hash === "#gestione") return apriGestione();
+  if ((st.approva || st.gestisce) && location.hash === "#gestione") return apriGestione();
   vai(st.dopo || "inizio"); st.dopo = "";
 }
-function entrato(d){ st.nome = d.nome; st.ruolo = d.ruolo; dopoAccesso(); }
+// The session route also says which rights this person has.
+function entrato(){ sessione(); }
 
 $("#entra").onclick = async () => {
   const err = $("#err-accesso"), btn = $("#entra"); err.textContent = "";
@@ -86,7 +87,7 @@ $("#f-attiva").onsubmit = async e => {
     att = r.d;
     if (WA.browserSupportsWebAuthn()) await creaPasskey();
     else if (att.ruolo === "staff") modoPin("Questo telefono non può usare Face ID o impronta per l'app. Scegli un PIN di 6 cifre.");
-    else err.textContent = "Per Gabriele serve un telefono con Face ID, impronta o blocco schermo.";
+    else err.textContent = "Per questo account serve un telefono con Face ID, impronta o blocco schermo.";
   } finally { btn.disabled = false; }
 };
 $("#riprova-passkey").onclick = () => att ? creaPasskey() : vai("attiva");
@@ -107,7 +108,7 @@ $("#f-pin").onsubmit = async e => {
   if (!r.ok) { err.textContent = r.d.errore || "PIN sbagliato."; return; }
   entrato(r.d);
 };
-$("#esci").onclick = async () => { await api("/api/sessione", "DELETE"); st.nome = st.ruolo = ""; sessione(); };
+$("#esci").onclick = async () => { await api("/api/sessione", "DELETE"); Object.assign(st, {nome: "", ruolo: "", approva: false, gestisce: false}); sessione(); };
 
 // ---- New or edited request ----
 function apriLista(){
