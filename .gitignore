@@ -3,3 +3,7 @@
 node_modules
 .impeccable/hook.cache.json
 .DS_Store
+# internal notes, kept local only (repo is public)
+docs/
+.impeccable/
+guida/
