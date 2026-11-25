@@ -676,6 +676,152 @@
           "",
           "10 kg"
         ]
+      ],
+      "Verdura": [
+        [
+          "Melanzane",
+          "",
+          "a kg"
+        ],
+        [
+          "Zucchine",
+          "",
+          "a kg"
+        ],
+        [
+          "Peperoni",
+          "",
+          "a kg"
+        ],
+        [
+          "Pomodoro ramato",
+          "",
+          "a kg"
+        ],
+        [
+          "Datterini rossi freschi",
+          "",
+          "cassa"
+        ],
+        [
+          "Insalata gentile",
+          "",
+          "cassa"
+        ],
+        [
+          "Radicchio",
+          "",
+          "a kg"
+        ],
+        [
+          "Scarola",
+          "",
+          "cassa"
+        ],
+        [
+          "Rucola",
+          "",
+          "busta"
+        ],
+        [
+          "Carote",
+          "",
+          "confezione"
+        ],
+        [
+          "Sedano",
+          "",
+          "pezzo"
+        ],
+        [
+          "Cipolle",
+          "",
+          "sacco"
+        ],
+        [
+          "Aglio",
+          "",
+          "striscia"
+        ],
+        [
+          "Patate",
+          "",
+          "sacco"
+        ],
+        [
+          "Patate Crisp4all",
+          "",
+          "cartone"
+        ]
+      ],
+      "Erbe aromatiche": [
+        [
+          "Basilico",
+          "",
+          "cassetta"
+        ],
+        [
+          "Prezzemolo",
+          "",
+          "mazzo"
+        ],
+        [
+          "Rosmarino",
+          "",
+          "mazzo"
+        ],
+        [
+          "Menta",
+          "",
+          "vaschetta"
+        ]
+      ],
+      "Frutta": [
+        [
+          "Limoni",
+          "",
+          "a kg"
+        ],
+        [
+          "Arance",
+          "",
+          "a kg"
+        ],
+        [
+          "Mele",
+          "",
+          "a kg"
+        ],
+        [
+          "Fragole",
+          "",
+          "vaschetta"
+        ],
+        [
+          "Lamponi",
+          "",
+          "vaschetta"
+        ],
+        [
+          "Mirtilli",
+          "",
+          "vaschetta"
+        ],
+        [
+          "Ananas",
+          "",
+          "pezzo"
+        ],
+        [
+          "Melone cantalupo",
+          "",
+          "pezzo"
+        ],
+        [
+          "Anguria",
+          "",
+          "pezzo"
+        ]
       ]
     },
     "Bar": {
