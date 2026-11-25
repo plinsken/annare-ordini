@@ -19,12 +19,13 @@ async function persona(chi, body, { uv = true } = {}) {
   if (!r.body?.conferma) return r;
   return chiama(persone, 'POST', { azione: 'conferma', sfida: r.body.sfida, risposta: chi.auth.accedi(r.body.opzioni, { uv }) }, {}, chi.jar);
 }
-const ruolo = (chi, p, ruolo, approva = false, gestisce = false, opz) => persona(chi, { persona: p.id, azione: 'ruolo', ruolo, approva, gestisce }, opz);
+const TUTTO = { sedi: ['Bianconi', 'Regina Margherita'], reparti: ['Pizzeria', 'Cucina', 'Bar', 'Sala'] };
+const ruolo = (chi, p, ruolo, approva = false, gestisce = false, opz) => persona(chi, { persona: p.id, azione: 'modifica', ruolo, approva, gestisce, ...TUTTO }, opz);
 const io = async p => (await chiama(sessione, 'GET', undefined, {}, p.jar)).body;
 
 test('making a manager needs Gabriele\'s Face ID; rights start off and apply at once', async () => {
   const m = await conSessione('Marta');
-  const chiede = await chiama(persone, 'POST', { persona: m.id, azione: 'ruolo', ruolo: 'manager', approva: false, gestisce: false }, {}, g.jar);
+  const chiede = await chiama(persone, 'POST', { persona: m.id, azione: 'modifica', ruolo: 'manager', approva: false, gestisce: false, ...TUTTO }, {}, g.jar);
   assert.equal(chiede.body.conferma, true, 'asks for Face ID');
   assert.equal((await ruolo(g, m, 'manager', false, false, { uv: false })).code, 401);
   assert.equal((await q(`SELECT ruolo FROM persone WHERE id = $1`, [m.id]))[0].ruolo, 'staff');
@@ -32,13 +33,13 @@ test('making a manager needs Gabriele\'s Face ID; rights start off and apply at 
   assert.equal((await ruolo(g, m, 'manager')).code, 200);
   assert.equal((await chiama(sessione, 'GET', undefined, {}, m.jar)).code, 401, 'new role, new login');
   assert.equal((await entraPasskey(m.auth, m.jar)).code, 200);
-  assert.deepEqual(await io(m), { nome: 'Marta', ruolo: 'manager', approva: false, gestisce: false, prova: true });
+  assert.deepEqual(await io(m), { nome: 'Marta', ruolo: 'manager', approva: false, gestisce: false, sedi: null, reparti: null, prova: true });
   assert.equal((await chiama(ordini, 'GET', undefined, {}, m.jar)).code, 403);
   assert.equal((await chiama(persone, 'GET', undefined, {}, m.jar)).code, 403);
 
   assert.equal((await ruolo(g, m, 'manager', true, false)).code, 200);
   assert.equal((await chiama(ordini, 'GET', undefined, {}, m.jar)).code, 200, 'same session, right on');
-  const tolto = await chiama(persone, 'POST', { persona: m.id, azione: 'ruolo', ruolo: 'manager', approva: false, gestisce: false }, {}, g.jar);
+  const tolto = await chiama(persone, 'POST', { persona: m.id, azione: 'modifica', ruolo: 'manager', approva: false, gestisce: false, ...TUTTO }, {}, g.jar);
   assert.equal(tolto.code, 200, 'taking a right away needs no Face ID');
   assert.equal((await chiama(ordini, 'GET', undefined, {}, m.jar)).code, 403, 'off at once');
   const [{ n }] = await q(`SELECT count(*)::int n FROM registro WHERE azione = 'ruolo-cambiato'`);
@@ -53,15 +54,16 @@ test('a manager who manages people: staff only, never Gabriele, managers, roles 
   assert.equal((await ruolo(g, altro, 'manager')).code, 200);
 
   assert.equal((await chiama(persone, 'GET', undefined, {}, m.jar)).code, 200);
-  const nuovo = await chiama(persone, 'POST', { nome: 'Nina' }, {}, m.jar);
+  const nuovo = await chiama(persone, 'POST', { nome: 'Nina', ...TUTTO }, {}, m.jar);
   assert.equal(nuovo.code, 200);
   assert.equal((await persona(m, { persona: nuovo.body.id, azione: 'codice' })).code, 200);
   assert.equal((await chiama(persone, 'DELETE', undefined, { query: { persona: String(nuovo.body.id) } }, m.jar)).code, 200);
 
   for (const p of [g, altro, m]) {
-    assert.equal((await persona(m, { persona: p.id, azione: 'codice' })).code, 403);
-    assert.equal((await persona(m, { persona: p.id, azione: 'telefono-perso' })).code, 403);
-    assert.equal((await chiama(persone, 'DELETE', undefined, { query: { persona: String(p.id) } }, m.jar)).code, 403);
+    const no = p === m ? 400 : 403;   // on yourself: 400
+    assert.equal((await persona(m, { persona: p.id, azione: 'codice' })).code, no);
+    assert.equal((await persona(m, { persona: p.id, azione: 'telefono-perso' })).code, no);
+    assert.equal((await chiama(persone, 'DELETE', undefined, { query: { persona: String(p.id) } }, m.jar)).code, no);
   }
   const s = await conSessione('Sofia');
   assert.equal((await ruolo(m, s, 'manager', true, true)).code, 403, 'only Gabriele makes managers');
@@ -91,7 +93,7 @@ test('manager codes need Face ID; managers have no PIN; promotion ends PIN phone
 
 test('a confirmation is only for the person and the request it was made for', async () => {
   const s = await conSessione('Sergio');
-  const r = await chiama(persone, 'POST', { persona: s.id, azione: 'ruolo', ruolo: 'manager', approva: true, gestisce: true }, {}, g.jar);
+  const r = await chiama(persone, 'POST', { persona: s.id, azione: 'modifica', ruolo: 'manager', approva: true, gestisce: true, ...TUTTO }, {}, g.jar);
   const login = await chiama(accesso, 'POST', { passo: 'opzioni' }, { ip: nuovoIp() });
   const furbo = await chiama(persone, 'POST', { azione: 'conferma', sfida: login.body.sfida, risposta: g.auth.accedi(login.body.opzioni) }, {}, g.jar);
   assert.equal(furbo.code, 400);

@@ -1,6 +1,6 @@
 // Staff requests. POST new; PUT/DELETE ?id= own request until its Friday 16:00; GET own requests (open and recent).
 import { entrata } from './_sessioni.js';
-import { valida } from './_prodotti.js';
+import { valida, dove } from './_prodotti.js';
 import { settimanaDi, settimanaDopo, scadenza } from './_settimana.js';
 import { registra } from './_registro.js';
 import { q } from './_db.js';
@@ -9,6 +9,7 @@ import { q } from './_db.js';
 export const adesso = () => globalThis.__ora?.() ?? new Date();
 const APERTA = `NOT EXISTS (SELECT 1 FROM settimane s WHERE s.settimana = $1::date)`;
 const CHIUSA = "Questa richiesta è già nell'ordine chiuso.";
+const FUORI = { errore: 'Non puoi ordinare per questa sede o questo reparto.' };
 
 // The week a new request goes into. It is the next one when this week was closed early (prova button).
 export async function settimanaAperta(ora = adesso()) {
@@ -26,6 +27,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const v = valida(req.body);
     if (v.errore) return res.status(400).json(v);
+    if (!dove(e.persona, v.sede, v.reparto)) return res.status(403).json(FUORI);
     const w = await settimanaAperta();
     const [r] = await q(`INSERT INTO richieste (persona_id, settimana, sede, reparto, righe, nota)
       SELECT $2, $1::date, $3, $4, $5, $6 WHERE ${APERTA} RETURNING id`, [w, io, v.sede, v.reparto, JSON.stringify(v.righe), v.nota]);
@@ -44,6 +46,7 @@ export default async function handler(req, res) {
   if (req.method === 'PUT') {
     const v = valida(req.body);
     if (v.errore) return res.status(400).json(v);
+    if (!dove(e.persona, v.sede, v.reparto)) return res.status(403).json(FUORI);
     fatta = await q(`UPDATE richieste SET sede = $3, reparto = $4, righe = $5, nota = $6, modificata = now()
       WHERE id = $2 AND ${APERTA} RETURNING id`, [r.settimana, id, v.sede, v.reparto, JSON.stringify(v.righe), v.nota]);
   } else {

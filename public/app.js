@@ -4,7 +4,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const breve = s => s.slice(8, 10) + "/" + s.slice(5, 7);
 const WA = window.SimpleWebAuthnBrowser;
 let DATI = {}, SEDI = [];
-const st = {nome:"", ruolo:"", approva:false, gestisce:false, prova:false, sede:"", reparto:"", q:{}, aperte:{}, altroNome:"", altroQ:"", note:"", modifica:null, modificaSettimana:"", dopo:"", mie:[]};
+const st = {nome:"", ruolo:"", approva:false, gestisce:false, sedi:null, reparti:null, prova:false, sede:"", reparto:"", q:{}, aperte:{}, altroNome:"", altroQ:"", note:"", modifica:null, modificaSettimana:"", dopo:"", mie:[]};
 function salva(){try{localStorage.setItem("annare-ordini",JSON.stringify({sede:st.sede}))}catch(e){}}
 try{const v=JSON.parse(localStorage.getItem("annare-ordini")||"{}");st.sede=v.sede||""}catch(e){}
 
@@ -25,15 +25,20 @@ function scelte(el,lista,att,on){el.innerHTML=lista.map(([v,s])=>`<button class=
 function inizio(){
   $("#nome").textContent=st.nome;
   $("#vai-gestione").hidden=!(st.approva||st.gestisce);
-  scelte($("#sedi"),SEDI.map(s=>[s,""]),st.sede,v=>{st.sede=v;salva();$("#err-inizio").textContent=""});
-  scelte($("#reparti"),Object.keys(DATI).map(r=>[r,Object.values(DATI[r]).reduce((a,c)=>a+c.length,0)+" prodotti"]),st.reparto,v=>{if(v!==st.reparto){st.q={};st.aperte={}}st.reparto=v;$("#err-inizio").textContent=""});
+  // Only the shops and departments this person may order for; with just one, it is already chosen.
+  const sedi=SEDI.filter(s=>!st.sedi||st.sedi.includes(s)),reparti=Object.keys(DATI).filter(r=>!st.reparti||st.reparti.includes(r));
+  if(!sedi.includes(st.sede))st.sede=sedi.length===1?sedi[0]:"";
+  if(st.reparto&&!reparti.includes(st.reparto)){st.reparto="";st.q={};st.aperte={}}
+  if(reparti.length===1&&!st.reparto)st.reparto=reparti[0];
+  scelte($("#sedi"),sedi.map(s=>[s,""]),st.sede,v=>{st.sede=v;salva();$("#err-inizio").textContent=""});
+  scelte($("#reparti"),reparti.map(r=>[r,Object.values(DATI[r]).reduce((a,c)=>a+c.length,0)+" prodotti"]),st.reparto,v=>{if(v!==st.reparto){st.q={};st.aperte={}}st.reparto=v;$("#err-inizio").textContent=""});
 }
 
 // ---- Login ----
 async function sessione(){
   const r = await api("/api/sessione");
   st.prova = !!r.d.prova; $(".prova").hidden = !st.prova;
-  if (r.ok) { Object.assign(st, {nome: r.d.nome, ruolo: r.d.ruolo, approva: !!r.d.approva, gestisce: !!r.d.gestisce}); return dopoAccesso(); }
+  if (r.ok) { Object.assign(st, {nome: r.d.nome, ruolo: r.d.ruolo, approva: !!r.d.approva, gestisce: !!r.d.gestisce, sedi: r.d.sedi ?? null, reparti: r.d.reparti ?? null}); return dopoAccesso(); }
   if (r.status === 401) { vai(r.d.dispositivo ? "pin" : "accesso"); $("#err-pin").textContent = r.d.bloccato ? "Telefono bloccato. Chiedi un nuovo codice a Gabriele." : ""; }
   else if (r.status) { $("#err-accesso").textContent = r.d.errore || "Servizio non disponibile."; vai("accesso"); }
 }
@@ -108,7 +113,7 @@ $("#f-pin").onsubmit = async e => {
   if (!r.ok) { err.textContent = r.d.errore || "PIN sbagliato."; return; }
   entrato(r.d);
 };
-$("#esci").onclick = async () => { await api("/api/sessione", "DELETE"); Object.assign(st, {nome: "", ruolo: "", approva: false, gestisce: false}); sessione(); };
+$("#esci").onclick = async () => { await api("/api/sessione", "DELETE"); Object.assign(st, {nome: "", ruolo: "", approva: false, gestisce: false, sedi: null, reparti: null}); sessione(); };
 
 // ---- New or edited request ----
 function apriLista(){
@@ -190,6 +195,7 @@ $("#invia").onclick=async()=>{
 $("#nuovo").onclick=()=>{pulisci();inizio();vai("inizio")};
 
 // ---- Le mie richieste ----
+const puoOrdinare=a=>(!st.sedi||st.sedi.includes(a.sede))&&(!st.reparti||st.reparti.includes(a.reparto));
 const ESITO={in_attesa:"In attesa di Gabriele",approvato:"Approvata",non_approvato:"Non approvata"};
 const righeMie=l=>l.map(x=>`<div class="riga"><span class="nome">${esc(x.nome)}<span class="dett">${esc(x.formato||"")}${x.cambio?` · Gabriele ha cambiato il totale: ${esc(x.cambio.prima??"da indicare")} → ${x.cambio.dopo===0?"tolto":esc(x.cambio.dopo??"da indicare")}`:""}</span></span><b>${esc(x.q??"da indicare")}</b></div>`).join("");
 async function mie(){
@@ -200,7 +206,7 @@ async function mie(){
   const {settimana,aperte,passate}=r.d;st.mie=aperte;
   $("#mie-scadenza").textContent="Ordine di venerdì "+breve(settimana)+": si chiude venerdì alle 16:00.";
   let h=aperte.length?"":`<p class="vuoto">Nessuna richiesta aperta.</p>`;
-  for(const a of aperte)h+=`<div class="scheda"><p class="etichetta">${esc(a.reparto)}, ${esc(a.sede)} · venerdì ${breve(a.settimana)}</p><div class="scelte">${righeMie(a.righe)}</div>${a.nota?`<p class="nota">${esc(a.nota)}</p>`:""}<div class="azioni"><button class="indietro" data-modifica="${a.id}">Modifica</button><button class="indietro" data-annulla="${a.id}">Annulla</button></div></div>`;
+  for(const a of aperte)h+=`<div class="scheda"><p class="etichetta">${esc(a.reparto)}, ${esc(a.sede)} · venerdì ${breve(a.settimana)}</p><div class="scelte">${righeMie(a.righe)}</div>${a.nota?`<p class="nota">${esc(a.nota)}</p>`:""}<div class="azioni">${puoOrdinare(a)?`<button class="indietro" data-modifica="${a.id}">Modifica</button>`:""}<button class="indietro" data-annulla="${a.id}">Annulla</button></div></div>`;
   if(passate.length){h+=`<p class="etichetta">Settimane chiuse</p>`;for(const p of passate)h+=`<div class="scheda"><p class="etichetta">${esc(p.reparto)}, ${esc(p.sede)} · venerdì ${breve(p.settimana)}</p><p class="nota"><b>${ESITO[p.esito]}</b></p><div class="scelte">${righeMie(p.righe)}</div></div>`}
   $("#mie").innerHTML=h;
 }

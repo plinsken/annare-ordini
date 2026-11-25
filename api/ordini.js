@@ -1,4 +1,4 @@
-// Gabriele and managers allowed to approve. GET: orders waiting and recent (?pdf=<id> downloads an approved one).
+// Gabriele and managers allowed to approve (managers: only their shops and departments). GET: orders waiting and recent (?pdf=<id> downloads an approved one).
 // POST {passo:'opzioni', ordine, righe:[{indice,q}]} -> passkey challenge holding the edited quantities;
 // POST {passo:'approva', sfida, risposta} -> approves (or rejects when every line is 0) after a fresh verified passkey.
 import { entrata } from './_sessioni.js';
@@ -6,7 +6,7 @@ import { opzioniAccesso, verificaAccesso, salvaSfida, prendiSfida } from './_pas
 import { creaPdf } from './_pdf.js';
 import { invia } from './_email.js';
 import { dataBreve } from './_settimana.js';
-import { MAX_Q } from './_prodotti.js';
+import { MAX_Q, dove } from './_prodotti.js';
 import { registra } from './_registro.js';
 import { q } from './_db.js';
 
@@ -33,21 +33,23 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (req.query?.pdf !== undefined) {
       const [o] = await q(`SELECT ${COLONNE}, (SELECT nome FROM persone WHERE id = deciso_da) AS da FROM ordini WHERE id = $1 AND stato = 'approvato'`, [Number(req.query.pdf) || 0]);
-      if (!o) return res.status(404).json({ errore: 'Ordine non trovato.' });
+      if (!o || !dove(io, o.sede, o.reparto)) return res.status(404).json({ errore: 'Ordine non trovato.' });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="Ordine ${o.reparto} ${o.id}.pdf"`);
       return res.status(200).send(Buffer.from(await pdfOrdine(o, o.da)));
     }
     const da_approvare = await q(`SELECT ${COLONNE} FROM ordini WHERE stato = 'da_approvare' ORDER BY settimana, sede, reparto`);
     const recenti = await q(`SELECT ${COLONNE} FROM ordini WHERE stato <> 'da_approvare' AND settimana > (now() - interval '8 weeks')::date ORDER BY settimana DESC, sede, reparto`);
-    return res.status(200).json({ da_approvare, recenti });
+    const miei = l => l.filter(o => dove(io, o.sede, o.reparto));
+    return res.status(200).json({ da_approvare: miei(da_approvare), recenti: miei(recenti) });
   }
   if (req.method !== 'POST') return res.status(405).end();
   const b = req.body || {};
 
   if (b.passo === 'opzioni') {
-    const [o] = await q(`SELECT id, righe FROM ordini WHERE id = $1 AND stato = 'da_approvare'`, [Number(b.ordine) || 0]);
+    const [o] = await q(`SELECT id, sede, reparto, righe FROM ordini WHERE id = $1 AND stato = 'da_approvare'`, [Number(b.ordine) || 0]);
     if (!o) return res.status(409).json({ errore: 'Ordine già approvato.' });
+    if (!dove(io, o.sede, o.reparto)) return res.status(403).json({ errore: 'Non hai il permesso.' });
     const nuove = Array.isArray(b.righe) && b.righe.length === o.righe.length ? new Array(o.righe.length) : null;
     for (const x of nuove ? b.righe : []) {
       const orig = o.righe[x?.indice];
@@ -67,6 +69,8 @@ export default async function handler(req, res) {
   if (!await verificaAccesso(b.risposta, sf, e.s, io.id)) return res.status(401).json({ errore: 'Conferma non riuscita. Riprova.' });
 
   const [o] = await q(`SELECT ${COLONNE} FROM ordini WHERE id = $1`, [sf.dati.ordine]);
+  // Access is read again: Gabriele may have changed it since the challenge.
+  if (!dove(io, o.sede, o.reparto)) return res.status(403).json({ errore: 'Non hai il permesso.' });
   const righe = o.righe.map((r, i) => ({ ...r, q: sf.dati.q[i] }));
   const stato = righe.every(r => r.q === 0) ? 'rifiutato' : 'approvato';
   const [fatto] = await q(`UPDATE ordini SET righe = $2, stato = $3, deciso = now(), deciso_da = $4 WHERE id = $1 AND stato = 'da_approvare' RETURNING ${COLONNE}`,

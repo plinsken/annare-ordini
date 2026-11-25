@@ -6,6 +6,9 @@ ALTER TABLE persone ADD COLUMN IF NOT EXISTS puo_approvare boolean NOT NULL DEFA
 ALTER TABLE persone ADD COLUMN IF NOT EXISTS puo_gestire boolean NOT NULL DEFAULT false;
 ALTER TABLE persone DROP CONSTRAINT IF EXISTS persone_ruolo_check;
 ALTER TABLE persone ADD CONSTRAINT persone_ruolo_check CHECK (ruolo IN ('staff','manager','admin'));
+-- Shops and departments a person may order for (managers: also approve). NULL = all of them.
+ALTER TABLE persone ADD COLUMN IF NOT EXISTS sedi text[];
+ALTER TABLE persone ADD COLUMN IF NOT EXISTS reparti text[];
 CREATE TABLE IF NOT EXISTS codici (
   hash text PRIMARY KEY, persona_id int NOT NULL REFERENCES persone(id),
   scade timestamptz NOT NULL, usato timestamptz);

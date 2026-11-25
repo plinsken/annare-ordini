@@ -24,7 +24,7 @@ export async function creaSessione(persona) {
 export async function chi(req, res) {
   const token = leggiCookie(req, 'sessione');
   if (!token) return null;
-  const [p] = await q(`SELECT p.id, p.nome, p.ruolo, p.puo_approvare, p.puo_gestire, s.scade < now() + interval '29 days' AS vecchia
+  const [p] = await q(`SELECT p.id, p.nome, p.ruolo, p.puo_approvare, p.puo_gestire, p.sedi, p.reparti, s.scade < now() + interval '29 days' AS vecchia
     FROM sessioni s JOIN persone p ON p.id = s.persona_id
     WHERE s.token_hash = $1 AND s.scade > now() AND p.rimossa IS NULL`, [sha(token)]);
   if (!p) return null;
@@ -34,7 +34,9 @@ export async function chi(req, res) {
   }
   // Rights are read on every request, so Gabriele switching one off takes effect at once.
   const potere = d => p.ruolo === 'admin' || (p.ruolo === 'manager' && d);
-  return { id: p.id, nome: p.nome, ruolo: p.ruolo, approva: potere(p.puo_approvare), gestisce: potere(p.puo_gestire) };
+  const tutto = p.ruolo === 'admin';
+  return { id: p.id, nome: p.nome, ruolo: p.ruolo, approva: potere(p.puo_approvare), gestisce: potere(p.puo_gestire),
+    sedi: tutto ? null : p.sedi, reparti: tutto ? null : p.reparti };
 }
 
 export async function esci(req) {

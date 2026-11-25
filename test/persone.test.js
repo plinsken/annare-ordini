@@ -12,12 +12,12 @@ const g = await conSessione('Gabriele', 'admin');
 
 test('staff cannot manage people', async () => {
   const s = await conSessione('Sara');
-  for (const [m, b, query] of [['GET'], ['POST', { nome: 'X' }], ['DELETE', undefined, { persona: String(g.id) }]])
+  for (const [m, b, query] of [['GET'], ['POST', { nome: 'X', sedi: ['Bianconi', 'Regina Margherita'], reparti: ['Pizzeria', 'Cucina', 'Bar', 'Sala'] }], ['DELETE', undefined, { persona: String(g.id) }]])
     assert.equal((await chiama(persone, m, b, { query }, s.jar)).code, 403);
 });
 
 test('add a person, they activate with the code, list shows how they log in', async () => {
-  const r = await chiama(persone, 'POST', { nome: '  Luca\nBianchi ' }, {}, g.jar);
+  const r = await chiama(persone, 'POST', { nome: '  Luca\nBianchi ', sedi: ['Bianconi', 'Regina Margherita'], reparti: ['Pizzeria', 'Cucina', 'Bar', 'Sala'] }, {}, g.jar);
   assert.equal(r.code, 200);
   assert.match(r.body.codice, /^[A-Z2-9]{10}$/);
   const { r: a } = await attivaPasskey(r.body.codice);
@@ -27,8 +27,8 @@ test('add a person, they activate with the code, list shows how they log in', as
   const luca = lista.find(p => p.id === r.body.id);
   assert.equal(luca.accesso, 'passkey');
   assert.equal(luca.ruolo, 'staff');
-  assert.equal((await chiama(persone, 'POST', { nome: '' }, {}, g.jar)).code, 400);
-  assert.equal((await chiama(persone, 'POST', { nome: 'x'.repeat(61) }, {}, g.jar)).code, 400);
+  assert.equal((await chiama(persone, 'POST', { nome: '', sedi: ['Bianconi', 'Regina Margherita'], reparti: ['Pizzeria', 'Cucina', 'Bar', 'Sala'] }, {}, g.jar)).code, 400);
+  assert.equal((await chiama(persone, 'POST', { nome: 'x'.repeat(61), sedi: ['Bianconi', 'Regina Margherita'], reparti: ['Pizzeria', 'Cucina', 'Bar', 'Sala'] }, {}, g.jar)).code, 400);
 });
 
 test('lost phone shuts out passkeys and sessions; a new code lets them back in', async () => {

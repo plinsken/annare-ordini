@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   }
   if (req.method !== 'GET') return res.status(405).end();
   const p = await chi(req, res);
-  if (p) return res.status(200).json({ nome: p.nome, ruolo: p.ruolo, approva: p.approva, gestisce: p.gestisce, prova });
+  if (p) return res.status(200).json({ nome: p.nome, ruolo: p.ruolo, approva: p.approva, gestisce: p.gestisce, sedi: p.sedi, reparti: p.reparti, prova });
   const token = leggiCookie(req, 'dispositivo');
   const [d] = token ? await q(`SELECT d.bloccato IS NOT NULL AS bloccato FROM dispositivi d JOIN persone p ON p.id = d.persona_id
     WHERE d.token_hash = $1 AND p.rimossa IS NULL`, [sha(token)]) : [];

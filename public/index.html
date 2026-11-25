@@ -85,6 +85,10 @@ textarea.campo{min-height:84px;resize:vertical}
 .scheda .riga.scelto{background:var(--semola)}
 .azioni{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
 .riga .azioni{margin-top:0;gap:12px;flex-shrink:0}
+#g-persone>.riga{flex-wrap:wrap}#g-persone>.riga>.nome{flex:1 1 200px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{border:1.5px solid var(--forno);background:transparent;color:var(--forno);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--forno);color:var(--latte)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -207,6 +211,7 @@ textarea.campo{min-height:84px;resize:vertical}
   <div id="g-sez-persone">
   <p class="etichetta">Persone</p>
   <form id="f-persona" class="altro" style="grid-template-columns:1fr auto"><input class="campo" id="g-nome" maxlength="60" placeholder="Nome e cognome" aria-label="Nome della nuova persona"><button class="pill">Aggiungi</button></form>
+  <div id="g-nuovo-dove"></div>
   <div class="ok" id="g-codice" hidden></div>
   <div class="scelte" id="g-persone" style="margin-top:10px"></div>
   </div>

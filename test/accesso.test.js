@@ -31,7 +31,7 @@ test('setup code -> passkey -> session; code works once and expires', async () =
   assert.match(codice, /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/);
   const r = await attivaPasskey(codice.toLowerCase().replace(/(.{5})/, '$1-'), auth, jar);
   assert.equal(r.code, 200);
-  assert.deepEqual((await chiama(sessione, 'GET', undefined, {}, jar)).body, { nome: 'Anna', ruolo: 'staff', approva: false, gestisce: false, prova: true });
+  assert.deepEqual((await chiama(sessione, 'GET', undefined, {}, jar)).body, { nome: 'Anna', ruolo: 'staff', approva: false, gestisce: false, sedi: null, reparti: null, prova: true });
 
   const again = await chiama(attiva, 'POST', { passo: 'codice', codice }, { ip: nuovoIp() });
   assert.equal(again.code, 401);

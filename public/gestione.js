@@ -8,6 +8,7 @@ async function apriGestione(){
   if (location.hash !== "#gestione") history.replaceState(null, "", "#gestione");
   $("#chi-gest").textContent = st.nome; $("#err-gest").textContent = ""; $("#g-prova").hidden = !(st.prova && st.approva);
   $("#g-sez-ordini").hidden = $("#g-sez-recenti").hidden = !st.approva; $("#g-sez-persone").hidden = !st.gestisce;
+  $("#g-nuovo-dove").innerHTML = sceltaDove(null, true);
   vai("gestione");
   await Promise.all([st.approva && caricaOrdini(), st.gestisce && caricaPersone()]);
 }
@@ -57,12 +58,8 @@ async function caricaPersone(){
   const r = await api("/api/persone");
   if (errore(r)) return;
   g.persone = Object.fromEntries(r.d.map(p => [p.id, p]));
-  const admin = st.ruolo === "admin";
-  $("#g-persone").innerHTML = r.d.map(p => {
-    // A manager acts on staff only; nobody acts on Gabriele from here.
-    const puo = p.ruolo === "staff" || (admin && p.ruolo === "manager");
-    return `<div class="riga" data-persona="${p.id}" data-nome="${esc(p.nome)}"><span class="nome">${esc(p.nome)}<span class="dett">${RUOLO(p)}${LOGIN[p.accesso]}${p.bloccato ? " · PIN bloccato" : ""}</span></span>${puo ? `<span class="azioni"><button class="indietro" data-azione="codice">Codice</button><button class="indietro" data-azione="telefono-perso">Perso</button><button class="indietro" data-azione="rimuovi">Togli</button>${admin ? `<button class="indietro" data-azione="ruolo">Ruolo</button>` : ""}</span>` : ""}</div>`;
-  }).join("");
+  // The server says whom I may act on (p.puoi): Gabriele everyone else, a manager staff within their own access.
+  $("#g-persone").innerHTML = r.d.map(p => `<div class="riga" data-persona="${p.id}" data-nome="${esc(p.nome)}"><span class="nome">${esc(p.nome)}<span class="dett">${RUOLO(p)}${p.ruolo === "admin" ? "" : esc(testoDove(p)) + " · "}${LOGIN[p.accesso]}${p.bloccato ? " · PIN bloccato" : ""}</span></span>${p.puoi ? `<span class="azioni"><button class="indietro" data-azione="codice">Codice</button><button class="indietro" data-azione="telefono-perso">Perso</button><button class="indietro" data-azione="rimuovi">Togli</button><button class="indietro" data-azione="modifica">Modifica</button></span>` : ""}</div>`).join("");
 }
 function RUOLO(p){
   if (p.ruolo === "admin") return "Gestione · ";
@@ -70,6 +67,16 @@ function RUOLO(p){
   const d = [p.approva && "approva ordini", p.gestisce && "gestisce persone"].filter(Boolean);
   return "Responsabile" + (d.length ? " (" + d.join(", ") + ")" : ", nessun permesso") + " · ";
 }
+const testoDove = p => (p.sedi ? p.sedi.join(", ") : "Tutte le sedi") + "; " + (p.reparti ? p.reparti.join(", ") : "tutti i reparti");
+// Shop and department ticks, limited to what I have myself. `p` null = nothing ticked (a new person), except a single choice.
+function sceltaDove(p, nuovo){
+  const sedi = SEDI.filter(s => !st.sedi || st.sedi.includes(s)), reparti = Object.keys(DATI).filter(r => !st.reparti || st.reparti.includes(r));
+  const on = (v, lista, tutti) => nuovo ? tutti.length === 1 : !lista || lista.includes(v);
+  const gruppo = (nome, tutti, lista) => `<div class="chips" data-gruppo="${nome}">` + tutti.map(v => `<button type="button" class="chip" aria-pressed="${on(v, lista, tutti)}" data-v="${esc(v)}">${esc(v)}</button>`).join("") + `</div>`;
+  return gruppo("sedi", sedi, p?.sedi) + gruppo("reparti", reparti, p?.reparti);
+}
+const letti = (el, nome) => [...el.querySelectorAll(`[data-gruppo="${nome}"] .chip[aria-pressed="true"]`)].map(b => b.dataset.v);
+$("#v-gestione").addEventListener("click", e => { const c = e.target.closest(".chip"); if (c) c.setAttribute("aria-pressed", String(c.getAttribute("aria-pressed") !== "true")); });
 // Sends a people request; when the server asks for Face ID first, asks for it and sends the confirmation.
 async function conConferma(dati){
   let r = await api("/api/persone", "POST", dati);
@@ -81,21 +88,25 @@ async function conConferma(dati){
   }
   return errore(r) ? null : r;
 }
-function editorRuolo(riga, p){
+function editor(riga, p){
   document.querySelectorAll("[data-editor]").forEach(x => x.remove());
+  const admin = st.ruolo === "admin";
   const casella = (c, testo, dett, on) => `<label class="riga"><span class="nome">${testo}${dett ? `<span class="dett">${dett}</span>` : ""}</span><input type="checkbox" data-c="${c}"${on ? " checked" : ""} style="width:22px;height:22px;accent-color:var(--pomodoro)"></label>`;
-  riga.insertAdjacentHTML("afterend", `<div class="scheda" data-editor="${p.id}"><p class="etichetta">Ruolo di ${esc(p.nome)}</p><div class="scelte">` +
-    casella("manager", "Responsabile", "entra solo con Face ID o impronta", p.ruolo === "manager") +
-    casella("approva", "Approva ordini", "", p.approva) + casella("gestisce", "Gestisce persone", "solo lo staff", p.gestisce) +
-    `</div><p class="nota">Dare un ruolo o un permesso chiede il tuo Face ID.</p><div class="azioni"><button class="pill" data-salva>Salva</button><button class="indietro" data-annulla>Annulla</button></div></div>`);
+  riga.insertAdjacentHTML("afterend", `<div class="scheda" data-editor="${p.id}"><p class="etichetta">${esc(p.nome)}</p><p class="nota">Può ordinare per:</p>${sceltaDove(p, false)}` +
+    (admin ? `<div class="scelte" style="margin-top:14px">` + casella("manager", "Responsabile", "entra solo con Face ID o impronta", p.ruolo === "manager") +
+    casella("approva", "Approva ordini", "delle sue sedi e dei suoi reparti", p.approva) + casella("gestisce", "Gestisce persone", "solo lo staff delle sue sedi e dei suoi reparti", p.gestisce) +
+    `</div><p class="nota">Dare un ruolo o un permesso a un responsabile chiede il tuo Face ID.</p>` : "") +
+    `<div class="azioni" style="margin-top:14px"><button class="pill" data-salva>Salva</button><button class="indietro" data-annulla>Annulla</button></div></div>`);
   const ed = riga.nextElementSibling, c = n => ed.querySelector(`[data-c="${n}"]`);
   const aggiorna = () => { for (const n of ["approva", "gestisce"]) { c(n).disabled = !c("manager").checked; if (!c("manager").checked) c(n).checked = false; } };
-  c("manager").onchange = aggiorna; aggiorna();
+  if (admin) { c("manager").onchange = aggiorna; aggiorna(); }
   ed.querySelector("[data-annulla]").onclick = () => ed.remove();
   ed.querySelector("[data-salva]").onclick = async e => {
     e.target.disabled = true; $("#err-gest").textContent = "";
     try {
-      const r = await conConferma({persona: p.id, azione: "ruolo", ruolo: c("manager").checked ? "manager" : "staff", approva: c("approva").checked, gestisce: c("gestisce").checked});
+      const dati = {persona: p.id, azione: "modifica", sedi: letti(ed, "sedi"), reparti: letti(ed, "reparti")};
+      if (admin) Object.assign(dati, {ruolo: c("manager").checked ? "manager" : "staff", approva: c("approva").checked, gestisce: c("gestisce").checked});
+      const r = await conConferma(dati);
       if (r) caricaPersone();
     } finally { e.target.disabled = false; }
   };
@@ -107,16 +118,19 @@ function mostraCodice(nome, codice){
 }
 $("#f-persona").onsubmit = async e => {
   e.preventDefault(); const nome = $("#g-nome").value.trim(); if (!nome) return;
-  const r = await api("/api/persone", "POST", {nome});
+  const dove = $("#g-nuovo-dove"), sedi = letti(dove, "sedi"), reparti = letti(dove, "reparti");
+  if (!sedi.length || !reparti.length) { $("#err-gest").textContent = "Scegli almeno una sede e un reparto per " + nome + "."; $("#err-gest").scrollIntoView({block: "center"}); return; }
+  $("#err-gest").textContent = "";
+  const r = await api("/api/persone", "POST", {nome, sedi, reparti});
   if (errore(r)) return;
-  $("#g-nome").value = ""; mostraCodice(nome, r.d.codice); caricaPersone();
+  $("#g-nome").value = ""; dove.innerHTML = sceltaDove(null, true); mostraCodice(nome, r.d.codice); caricaPersone();
 };
 $("#g-persone").addEventListener("click", async e => {
   const b = e.target.closest("[data-azione]"); if (!b) return;
   const riga = b.closest("[data-persona]"), persona = Number(riga.dataset.persona), nome = riga.dataset.nome, azione = b.dataset.azione;
   if (azione === "telefono-perso" && !confirm(nome + " non potrà più entrare finché non gli dai un nuovo codice. Continuo?")) return;
   if (azione === "rimuovi" && !confirm("Togliere " + nome + " dall'app?")) return;
-  if (azione === "ruolo") return editorRuolo(riga, g.persone[persona]);
+  if (azione === "modifica") return editor(riga, g.persone[persona]);
   $("#err-gest").textContent = "";
   let r = azione === "rimuovi" ? await api("/api/persone?persona=" + persona, "DELETE") : await conConferma({persona, azione});
   if (azione === "rimuovi" && errore(r)) r = null;
